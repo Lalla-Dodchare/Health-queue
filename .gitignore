@@ -55,3 +55,6 @@ Thumbs.db
 nul
 test-gemini.js
 database-payment-test-data.sql
+
+# Documentation
+ADMIN_DEV_GUIDE.md

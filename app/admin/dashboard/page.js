@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, logout } from '@/lib/auth'
-import { Users, Calendar, Stethoscope, Settings, LogOut, BarChart } from 'lucide-react'
+import { getCurrentUser } from '@/lib/auth'
+import AdminSidebar from '@/components/admin/Sidebar'
+import { Users, Calendar, Stethoscope, Settings, BarChart } from 'lucide-react'
 
 export default function AdminDashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    users: 0,
+    doctors: 0,
+    appointmentsToday: 0,
+    appointmentsThisMonth: 0,
+  })
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -31,9 +38,30 @@ export default function AdminDashboard() {
     checkAuth()
   }, [router])
 
-  const handleLogout = async () => {
-    await logout()
-  }
+  // Fetch stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/stats')
+        const result = await response.json()
+
+        if (result.success) {
+          setStats({
+            users: result.data.users,
+            doctors: result.data.doctors,
+            appointmentsToday: result.data.appointmentsToday,
+            appointmentsThisMonth: result.data.appointmentsThisMonth,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+      }
+    }
+
+    if (user) {
+      fetchStats()
+    }
+  }, [user])
 
   if (loading) {
     return (
@@ -44,32 +72,15 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-red-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                <span className="text-red-600">Admin</span> Panel
-              </h1>
-              <p className="text-sm text-gray-600">
-                สวัสดี, {user?.name || 'ผู้ดูแลระบบ'}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>ออกจากระบบ</span>
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-64 flex-shrink-0">
+        <AdminSidebar user={user} />
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
@@ -77,7 +88,7 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-medium text-gray-600">ผู้ใช้งานทั้งหมด</h3>
               <Users className="w-8 h-8 text-blue-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">0</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.users}</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
@@ -85,7 +96,7 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-medium text-gray-600">แพทย์ทั้งหมด</h3>
               <Stethoscope className="w-8 h-8 text-green-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">60</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.doctors}</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
@@ -93,7 +104,7 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-medium text-gray-600">นัดหมายวันนี้</h3>
               <Calendar className="w-8 h-8 text-purple-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">0</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.appointmentsToday}</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
@@ -101,7 +112,7 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-medium text-gray-600">สถิติเดือนนี้</h3>
               <BarChart className="w-8 h-8 text-orange-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">0</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.appointmentsThisMonth}</p>
           </div>
         </div>
 
@@ -178,6 +189,7 @@ export default function AdminDashboard() {
               ตั้งค่าและกำหนดสิทธิ์การใช้งาน
             </p>
           </div>
+        </div>
         </div>
       </main>
     </div>
