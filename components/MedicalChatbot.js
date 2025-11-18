@@ -2,8 +2,8 @@
 
 /**
  * MedicalChatbot Component
- * AI-powered chatbot for symptom checking and doctor recommendations
- * Uses OpenAI API for intelligent responses
+ * AI-powered chatbot for symptom checking and health advice
+ * Uses Google Gemini API for intelligent responses
  */
 
 import { useState, useEffect, useRef } from 'react'
@@ -48,7 +48,7 @@ export default function MedicalChatbot() {
     }
   }, [isOpen, isMinimized])
 
-  // Send message to OpenAI API
+  // Send message to Gemini API
   const sendMessage = async () => {
     if (!input.trim() || loading) return
 
@@ -64,17 +64,14 @@ export default function MedicalChatbot() {
     setLoading(true)
 
     try {
-      // Call API route to interact with OpenAI
-      const response = await fetch('/api/chatbot', {
+      // Call API route to interact with Gemini
+      const response = await fetch('/api/health-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
+          message: userMessage.content,
           language: language,
         }),
       })
@@ -88,9 +85,8 @@ export default function MedicalChatbot() {
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message,
+        content: data.reply || data.error,
         timestamp: new Date(),
-        recommendations: data.recommendations, // Doctor recommendations
       }
 
       setMessages((prev) => [...prev, assistantMessage])

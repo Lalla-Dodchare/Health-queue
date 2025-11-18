@@ -7,9 +7,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { useTranslation } from '@/hooks/useTranslation'
-import { Bell, Check, Calendar, FileText, MessageSquare, X } from 'lucide-react'
+import { Bell, Check, Calendar, FileText, MessageSquare, X, CreditCard, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 export default function NotificationDropdown({ userId }) {
   const router = useRouter()
@@ -38,18 +37,13 @@ export default function NotificationDropdown({ userId }) {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10)
+      const res = await fetch('/api/notifications?limit=20')
+      const data = await res.json()
 
-      if (error) throw error
-
-      setNotifications(data || [])
-      const unread = data?.filter(n => !n.is_read).length || 0
-      setUnreadCount(unread)
+      if (data.success) {
+        setNotifications(data.notifications || [])
+        setUnreadCount(data.unreadCount || 0)
+      }
     } catch (error) {
       console.error('Error fetching notifications:', error)
     } finally {
@@ -73,18 +67,17 @@ export default function NotificationDropdown({ userId }) {
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId)
+      const res = await fetch(`/api/notifications/${notificationId}`, {
+        method: 'PATCH'
+      })
 
-      if (error) throw error
-
-      // Update local state
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-      )
-      setUnreadCount(prev => Math.max(0, prev - 1))
+      if (res.ok) {
+        // Update local state
+        setNotifications(prev =>
+          prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+        )
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      }
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
@@ -93,16 +86,14 @@ export default function NotificationDropdown({ userId }) {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', userId)
-        .eq('is_read', false)
+      const res = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST'
+      })
 
-      if (error) throw error
-
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-      setUnreadCount(0)
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+        setUnreadCount(0)
+      }
     } catch (error) {
       console.error('Error marking all as read:', error)
     }
@@ -112,13 +103,18 @@ export default function NotificationDropdown({ userId }) {
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id)
 
-    // Navigate based on notification type
-    if (notification.type === 'appointment' && notification.metadata?.appointment_id) {
-      router.push(`/dashboard/appointments/${notification.metadata.appointment_id}`)
-    } else if (notification.type === 'test_result' && notification.metadata?.result_id) {
-      router.push(`/dashboard/medical-records/${notification.metadata.result_id}`)
-    } else if (notification.type === 'message' && notification.metadata?.message_id) {
-      router.push(`/dashboard/messages/${notification.metadata.message_id}`)
+    // Navigate to action URL if provided
+    if (notification.action_url) {
+      router.push(notification.action_url)
+      setIsOpen(false)
+      return
+    }
+
+    // Fallback: Navigate based on notification type
+    if (notification.type === 'appointment' && notification.related_appointment_id) {
+      router.push(`/dashboard/appointments`)
+    } else if (notification.type === 'payment' && notification.related_payment_id) {
+      router.push(`/dashboard/appointments`)
     }
 
     setIsOpen(false)
@@ -129,12 +125,18 @@ export default function NotificationDropdown({ userId }) {
     switch (type) {
       case 'appointment':
         return <Calendar className="w-5 h-5 text-blue-500" />
-      case 'test_result':
-        return <FileText className="w-5 h-5 text-green-500" />
+      case 'payment':
+        return <CreditCard className="w-5 h-5 text-green-500" />
+      case 'success':
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      case 'warning':
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />
+      case 'error':
+        return <AlertCircle className="w-5 h-5 text-red-500" />
       case 'message':
         return <MessageSquare className="w-5 h-5 text-purple-500" />
       default:
-        return <Bell className="w-5 h-5 text-gray-500" />
+        return <Info className="w-5 h-5 text-gray-500" />
     }
   }
 

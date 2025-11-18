@@ -50,3 +50,8 @@ Thumbs.db
 
 # Claude Code
 .claude/settings.local.json
+
+# Test files
+nul
+test-gemini.js
+database-payment-test-data.sql

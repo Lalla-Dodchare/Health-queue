@@ -12,8 +12,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useTranslation } from '@/hooks/useTranslation'
 import UserHeader from '@/components/UserHeader'
-import MedicalChatbot from '@/components/MedicalChatbot'
-import AdminMessaging from '@/components/AdminMessaging'
+import UnifiedChatbot from '@/components/UnifiedChatbot'
 import { Calendar, Clock, FileText, User, TrendingUp, Heart, Activity } from 'lucide-react'
 
 export default function UserDashboard() {
@@ -120,7 +119,7 @@ export default function UserDashboard() {
           <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">
-                {t('appointment.upcoming') || 'นัดหมายถัดไป'}
+                {t('dashboard.upcomingAppointments') || 'นัดหมายถัดไป'}
               </h3>
               <Calendar className="w-8 h-8 text-blue-500" />
             </div>
@@ -130,21 +129,21 @@ export default function UserDashboard() {
           <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">
-                {t('common.healthScore') || 'คะแนนสุขภาพ'}
+                {t('dashboard.totalVisits') || 'การเข้ารับบริการ'}
               </h3>
               <Heart className="w-8 h-8 text-green-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">85%</p>
+            <p className="text-3xl font-bold text-gray-900">24</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">
-                {t('common.activity') || 'กิจกรรมเดือนนี้'}
+                {t('dashboard.loyaltyPoints') || 'คะแนนสะสม'}
               </h3>
               <TrendingUp className="w-8 h-8 text-purple-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">12</p>
+            <p className="text-3xl font-bold text-gray-900">{user.points || 0}</p>
           </div>
         </div>
 
@@ -155,17 +154,17 @@ export default function UserDashboard() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <button
-              onClick={() => router.push('/dashboard/appointments/new')}
+              onClick={() => router.push('/dashboard/book-appointment')}
               className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-all hover:scale-105 text-left group"
             >
               <div className="flex items-center justify-between mb-4">
                 <Calendar className="w-10 h-10 text-blue-600 group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                {t('header.quickBook') || 'จองนัดหมาย'}
+                {t('dashboard.bookAppointment') || 'จองนัดหมาย'}
               </h3>
               <p className="text-sm text-gray-600">
-                {t('common.bookDescription') || 'จองคิวพบแพทย์ล่วงหน้า'}
+                {t('dashboard.bookAppointmentDesc') || 'จองคิวพบแพทย์ล่วงหน้า'}
               </p>
             </button>
 
@@ -177,10 +176,10 @@ export default function UserDashboard() {
                 <Clock className="w-10 h-10 text-green-600 group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                {t('header.appointments') || 'ประวัตินัดหมาย'}
+                {t('dashboard.appointmentHistory') || 'นัดหมายของฉัน'}
               </h3>
               <p className="text-sm text-gray-600">
-                {t('common.appointmentHistory') || 'ดูประวัตินัดหมายทั้งหมด'}
+                {t('dashboard.appointmentHistoryDesc') || 'ดูประวัตินัดหมายทั้งหมด'}
               </p>
             </button>
 
@@ -192,10 +191,10 @@ export default function UserDashboard() {
                 <FileText className="w-10 h-10 text-purple-600 group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                {t('header.medicalRecords') || 'ประวัติการรักษา'}
+                {t('dashboard.medicalHistory') || 'ประวัติการรักษา'}
               </h3>
               <p className="text-sm text-gray-600">
-                {t('common.medicalRecordsDesc') || 'ดูประวัติการรักษาของคุณ'}
+                {t('dashboard.medicalHistoryDesc') || 'ดูประวัติการรักษาของคุณ'}
               </p>
             </button>
 
@@ -207,10 +206,10 @@ export default function UserDashboard() {
                 <User className="w-10 h-10 text-orange-600 group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                {t('header.profile') || 'ข้อมูลส่วนตัว'}
+                {t('dashboard.profile') || 'โปรไฟล์'}
               </h3>
               <p className="text-sm text-gray-600">
-                {t('common.profileDesc') || 'แก้ไขโปรไฟล์ของคุณ'}
+                {t('dashboard.profileDesc') || 'จัดการข้อมูลส่วนตัว'}
               </p>
             </button>
           </div>
@@ -239,10 +238,10 @@ export default function UserDashboard() {
                 {t('appointment.noUpcoming') || 'ไม่มีนัดหมายในขณะนี้'}
               </p>
               <button
-                onClick={() => router.push('/dashboard/appointments/new')}
+                onClick={() => router.push('/dashboard/book-appointment')}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                {t('appointment.bookNew') || 'จองนัดหมายใหม่'}
+                {t('dashboard.bookNew') || 'จองนัดหมายใหม่'}
               </button>
             </div>
           ) : (
@@ -287,11 +286,8 @@ export default function UserDashboard() {
         </div>
       </main>
 
-      {/* Medical Chatbot - AI symptom checker (no chat history) */}
-      <MedicalChatbot />
-
-      {/* Admin Messaging - Chat with admins (60-day retention) */}
-      <AdminMessaging userId={user?.id} userRole="user" />
+      {/* Unified Chatbot - AI + Admin in one interface */}
+      <UnifiedChatbot userId={user?.id} userRole="user" />
     </div>
   )
 }
