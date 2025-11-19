@@ -52,8 +52,17 @@ export default function UserChatPage() {
 
     const fetchMessages = async () => {
       try {
+        // Get access token from Supabase session
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          console.error('No session found')
+          return
+        }
+
         const response = await fetch('/api/chat/messages', {
-          credentials: 'include', // Send cookies
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          },
           cache: 'no-store'
         })
         const data = await response.json()
@@ -99,12 +108,18 @@ export default function UserChatPage() {
     setSending(true)
 
     try {
+      // Get access token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        alert('กรุณาเข้าสู่ระบบใหม่')
+        return
+      }
+
       const response = await fetch('/api/chat/send', {
         method: 'POST',
-        credentials: 'include', // Send cookies
-        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           message: newMessage.trim(),

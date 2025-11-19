@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -8,25 +7,21 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export async function GET(request) {
   try {
-    // Get session from cookies
-    const cookieStore = cookies()
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage: {
-          getItem: (key) => cookieStore.get(key)?.value,
-          setItem: () => {},
-          removeItem: () => {},
-        },
-      },
-    })
-
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get access token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token' }, { status: 401 })
     }
 
-    const user = session.user
+    const token = authHeader.replace('Bearer ', '')
+
+    // Verify token and get user
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
+    }
 
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('user_id')
