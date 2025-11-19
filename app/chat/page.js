@@ -52,7 +52,10 @@ export default function UserChatPage() {
 
     const fetchMessages = async () => {
       try {
-        const response = await fetch('/api/chat/messages')
+        const response = await fetch('/api/chat/messages', {
+          credentials: 'include', // Send cookies
+          cache: 'no-store'
+        })
         const data = await response.json()
 
         if (data.messages) {
@@ -73,7 +76,7 @@ export default function UserChatPage() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'admin_chats',
+          table: 'admin_messages',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
@@ -92,11 +95,14 @@ export default function UserChatPage() {
 
     if (!newMessage.trim() || sending) return
 
+    console.log('Sending message:', newMessage)
     setSending(true)
 
     try {
       const response = await fetch('/api/chat/send', {
         method: 'POST',
+        credentials: 'include', // Send cookies
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -105,12 +111,16 @@ export default function UserChatPage() {
         }),
       })
 
+      console.log('Response status:', response.status)
+      const data = await response.json()
+      console.log('Response data:', data)
+
       if (response.ok) {
-        const data = await response.json()
         setMessages((prev) => [...prev, data.data])
         setNewMessage('')
       } else {
-        alert('ไม่สามารถส่งข้อความได้')
+        console.error('Failed to send:', data)
+        alert(`ไม่สามารถส่งข้อความได้: ${data.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error sending message:', error)

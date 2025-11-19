@@ -55,34 +55,57 @@ export default function AdminChatPage() {
 
     const fetchConversations = async () => {
       try {
-        // Get all unique user conversations
-        const { data, error } = await supabase
-          .from('admin_chats')
-          .select(`
-            id,
-            user_id,
-            message,
-            sender_type,
-            created_at,
-            is_read,
-            profiles (
-              full_name,
-              email
-            )
-          `)
-          .order('created_at', { ascending: false })
+        // Fetch all messages via API
+        const response = await fetch('/api/chat/messages', {
+          credentials: 'include', // Send cookies
+          cache: 'no-store'
+        })
+        const data = await response.json()
 
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch messages')
+        }
+
+        const messages = data.messages || []
 
         // Group by user_id and get latest message
         const grouped = {}
-        data?.forEach((msg) => {
-          if (!grouped[msg.user_id] || new Date(msg.created_at) > new Date(grouped[msg.user_id].created_at)) {
-            grouped[msg.user_id] = msg
+        messages.forEach((msg) => {
+          if (!grouped[msg.user_id]) {
+            grouped[msg.user_id] = {
+              id: msg.id,
+              user_id: msg.user_id,
+              message: msg.message,
+              sender_type: msg.sender_type,
+              created_at: msg.created_at,
+              is_read: msg.is_read,
+            }
           }
         })
 
-        setConversations(Object.values(grouped))
+        // Get user profiles
+        const userIds = Object.keys(grouped)
+        if (userIds.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', userIds)
+
+          if (profileError) throw profileError
+
+          // Merge profiles with conversations
+          const conversationsData = Object.values(grouped).map((conv) => {
+            const profile = profiles.find((p) => p.id === conv.user_id)
+            return {
+              ...conv,
+              profiles: profile || null,
+            }
+          })
+
+          setConversations(conversationsData)
+        } else {
+          setConversations([])
+        }
       } catch (error) {
         console.error('Error fetching conversations:', error)
       }
@@ -98,7 +121,7 @@ export default function AdminChatPage() {
     const fetchMessages = async () => {
       try {
         const { data, error } = await supabase
-          .from('admin_chats')
+          .from('admin_messages')
           .select('*')
           .eq('user_id', selectedChat.user_id)
           .order('created_at', { ascending: true })
@@ -109,7 +132,7 @@ export default function AdminChatPage() {
 
         // Mark as read
         await supabase
-          .from('admin_chats')
+          .from('admin_messages')
           .update({ is_read: true })
           .eq('user_id', selectedChat.user_id)
           .eq('sender_type', 'user')
@@ -128,7 +151,7 @@ export default function AdminChatPage() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'admin_chats',
+          table: 'admin_messages',
           filter: `user_id=eq.${selectedChat.user_id}`,
         },
         (payload) => {
@@ -151,6 +174,8 @@ export default function AdminChatPage() {
     try {
       const response = await fetch('/api/chat/send', {
         method: 'POST',
+        credentials: 'include', // Send cookies
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
         },

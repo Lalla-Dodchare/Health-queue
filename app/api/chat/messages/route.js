@@ -1,20 +1,54 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { getCurrentUser } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export async function GET(request) {
   try {
-    const currentUser = await getCurrentUser()
+    // Get session from cookies
+    const cookieStore = cookies()
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: {
+          getItem: (key) => cookieStore.get(key)?.value,
+          setItem: () => {},
+          removeItem: () => {},
+        },
+      },
+    })
 
-    if (!currentUser) {
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const user = session.user
 
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('user_id')
 
-    let query = supabase
-      .from('admin_chats')
+    // Use service role client to bypass RLS
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Check if user is admin using service role
+    const { data: adminData } = await supabaseAdmin
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const currentUser = {
+      id: user.id,
+      email: user.email,
+      role: adminData ? 'admin' : 'user',
+    }
+
+    let query = supabaseAdmin
+      .from('admin_messages')
       .select('*')
       .order('created_at', { ascending: true })
 
@@ -30,7 +64,7 @@ export async function GET(request) {
 
     if (error) {
       console.error('Error fetching messages:', error)
-      return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch messages', details: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ messages: data || [] }, { status: 200 })
