@@ -40,17 +40,18 @@ export async function POST(request) {
       .maybeSingle()
 
     // Determine sender type based on user role
-    const senderType = adminData ? 'admin' : 'user'
+    const senderRole = adminData ? 'admin' : 'user'
 
     // Insert message into database
     const { data, error } = await supabaseAdmin
       .from('admin_messages')
       .insert({
-        user_id: senderType === 'user' ? currentUser.id : recipient_id,
-        admin_id: senderType === 'admin' ? currentUser.id : null,
+        user_id: senderRole === 'user' ? currentUser.id : recipient_id,
+        sender_id: currentUser.id,
+        sender_role: senderRole,
+        recipient_id: senderRole === 'admin' ? recipient_id : null,
         message: message.trim(),
-        sender_type: senderType,
-        is_read: false,
+        message_type: 'text',
       })
       .select()
       .single()

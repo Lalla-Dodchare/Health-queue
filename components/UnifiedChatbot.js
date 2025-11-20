@@ -229,12 +229,14 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
           if (userId) {
             await supabase.from('admin_messages').insert([
               {
+                user_id: userId,
                 sender_id: userId,
                 sender_role: 'user',
                 message: userMessage,
                 message_type: 'text',
               },
               {
+                user_id: userId,
                 sender_id: null,
                 sender_role: 'system',
                 recipient_id: userId,
@@ -268,6 +270,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
 
           if (userId) {
             await supabase.from('admin_messages').insert([{
+              user_id: userId,
               sender_id: null,
               sender_role: 'system',
               recipient_id: userId,
@@ -294,12 +297,14 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
         if (userId) {
           await supabase.from('admin_messages').insert([
             {
+              user_id: userId,
               sender_id: userId,
               sender_role: 'user',
               message: userMessage,
               message_type: 'text',
             },
             {
+              user_id: userId,
               sender_id: null, // AI messages don't have sender_id
               sender_role: 'ai',
               recipient_id: userId,
@@ -325,6 +330,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
     // Admin Mode: Send to admin (save to database)
     else {
       const newMessage = {
+        user_id: userId,
         sender_id: userId,
         sender_role: userRole,
         recipient_id: null, // Will be picked up by admin

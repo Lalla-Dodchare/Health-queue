@@ -80,6 +80,9 @@ export default function AdminChatPage() {
         // Group by user_id and get latest message
         const grouped = {}
         messages.forEach((msg) => {
+          // Skip messages without user_id (AI/system messages)
+          if (!msg.user_id) return
+
           if (!grouped[msg.user_id]) {
             grouped[msg.user_id] = {
               id: msg.id,
