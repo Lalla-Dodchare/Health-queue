@@ -93,42 +93,28 @@ export default function UserHeader() {
 
   return (
     <header className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 md:h-24 gap-4">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between py-4 gap-2 sm:gap-4">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Activity className="w-7 h-7 text-white" />
+          <Link href="/dashboard" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
+              <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-            <div className="hidden md:block">
-              <h1 className="text-2xl font-bold text-gray-900 leading-tight">Health Queue</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Hospital Appointment System</p>
+            <div className="hidden sm:block">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight">Health Queue</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 hidden md:block">Hospital Appointment</p>
             </div>
           </Link>
 
-          {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-2xl mx-8" style={{ minWidth: '300px' }}>
-            <SearchDoctor />
-          </div>
-
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2 xl:gap-3 flex-shrink-0">
             {/* Appointments Link */}
             <Link
               href="/dashboard/appointments"
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
             >
-              <Calendar className="w-5 h-5" />
-              <span className="font-medium">{t('header.appointments')}</span>
-            </Link>
-
-            {/* Medical Records Link */}
-            <Link
-              href="/dashboard/medical-history"
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
-            >
-              <FileText className="w-5 h-5" />
-              <span className="font-medium">{t('header.medicalRecords')}</span>
+              <Calendar className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium text-sm">{t('header.appointments')}</span>
             </Link>
 
             {/* Notifications */}
@@ -137,30 +123,29 @@ export default function UserHeader() {
             {/* Language Switcher */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
             >
-              <Globe className="w-5 h-5 text-gray-600" />
+              <Globe className="w-5 h-5 text-gray-600 flex-shrink-0" />
               <span className="font-medium text-gray-700 text-sm">
                 {language === 'th' ? 'TH' : 'EN'}
               </span>
             </button>
 
-            {/* Profile Menu */}
-            <div ref={profileRef} className="relative">
+            {/* Profile Menu with Name */}
+            <div ref={profileRef} className="relative flex-shrink-0">
               <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                   {getUserInitials()}
                 </div>
-                <div className="hidden lg:block text-left">
-                  <p className="text-sm font-semibold text-gray-900">
+                <div className="text-left max-w-[150px]">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
                     {user?.name || 'User'}
                   </p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
               </button>
 
               {/* Profile Dropdown */}
@@ -168,7 +153,7 @@ export default function UserHeader() {
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-white border-b border-gray-100">
                     <p className="font-semibold text-gray-900">{user?.name || 'User'}</p>
-                    <p className="text-sm text-gray-600">{user?.email}</p>
+                    <p className="text-sm text-gray-600 break-all">{user?.email}</p>
                   </div>
 
                   <div className="py-2">
@@ -178,7 +163,7 @@ export default function UserHeader() {
                       onClick={() => setProfileMenuOpen(false)}
                     >
                       <User className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">{t('header.profile')}</span>
+                      <span className="text-gray-700">โปรไฟล์</span>
                     </Link>
 
                     <Link
@@ -187,7 +172,7 @@ export default function UserHeader() {
                       onClick={() => setProfileMenuOpen(false)}
                     >
                       <Settings className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">{t('header.settings')}</span>
+                      <span className="text-gray-700">ตั้งค่า</span>
                     </Link>
 
                     <button
@@ -195,7 +180,7 @@ export default function UserHeader() {
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 transition-colors"
                     >
                       <LogOut className="w-5 h-5" />
-                      <span>{t('header.logout')}</span>
+                      <span>ออกจากระบบ</span>
                     </button>
                   </div>
                 </div>
@@ -203,28 +188,33 @@ export default function UserHeader() {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-700" />
-            ) : (
-              <Menu className="w-6 h-6 text-gray-700" />
-            )}
-          </button>
-        </div>
+          {/* Mobile: Profile + Menu Button */}
+          <div className="flex lg:hidden items-center gap-2 flex-shrink-0">
+            {/* Mobile Profile Icon */}
+            <Link href="/dashboard/profile" className="flex-shrink-0">
+              <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                {getUserInitials()}
+              </div>
+            </Link>
 
-        {/* Mobile Search */}
-        <div className="md:hidden pb-4">
-          <SearchDoctor />
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6 text-gray-700" />
+              ) : (
+                <Menu className="w-6 h-6 text-gray-700" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white">
+        <div className="lg:hidden border-t border-gray-100 bg-white">
           <div className="px-4 py-3 space-y-2">
             <Link
               href="/dashboard/appointments"
@@ -232,16 +222,7 @@ export default function UserHeader() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <Calendar className="w-5 h-5 text-gray-600" />
-              <span>{t('header.appointments')}</span>
-            </Link>
-
-            <Link
-              href="/dashboard/medical-history"
-              className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <FileText className="w-5 h-5 text-gray-600" />
-              <span>{t('header.medicalRecords')}</span>
+              <span>นัดหมายของฉัน</span>
             </Link>
 
             <Link
@@ -250,7 +231,7 @@ export default function UserHeader() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <User className="w-5 h-5 text-gray-600" />
-              <span>{t('header.profile')}</span>
+              <span>โปรไฟล์</span>
             </Link>
 
             <Link
@@ -259,7 +240,7 @@ export default function UserHeader() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <Settings className="w-5 h-5 text-gray-600" />
-              <span>{t('header.settings')}</span>
+              <span>ตั้งค่า</span>
             </Link>
 
             <button
@@ -275,7 +256,7 @@ export default function UserHeader() {
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 rounded-lg"
             >
               <LogOut className="w-5 h-5" />
-              <span>{t('header.logout')}</span>
+              <span>ออกจากระบบ</span>
             </button>
           </div>
         </div>

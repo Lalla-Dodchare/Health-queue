@@ -12,6 +12,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useTranslation } from '@/hooks/useTranslation'
 import UserHeader from '@/components/UserHeader'
+import { getDisplayDateTime, APPOINTMENT_V2_FIELDS } from '@/utils/appointmentHelpers'
 import {
   FileText,
   Download,
@@ -76,22 +77,21 @@ export default function MedicalHistoryPage() {
           created_at,
           appointments (
             id,
-            appointment_date,
-            appointment_time,
+            primary_date,
+            primary_time,
+            secondary_date,
+            secondary_time,
+            approved_slot,
+            status,
             doctors (
               id,
-              full_name,
-              name_th,
-              name_en,
-              specialization,
-              specialty_th,
-              specialty_en
+              contact_name,
+              contact_email,
+              specialty
             ),
-            clinics (
+            departments (
               id,
-              name,
-              name_th,
-              name_en
+              name
             )
           ),
           prescriptions (
@@ -136,27 +136,26 @@ export default function MedicalHistoryPage() {
         filterDate.setFullYear(now.getFullYear() - 1)
       }
 
-      filtered = filtered.filter((record) =>
-        new Date(record.appointments?.appointment_date || record.created_at) >= filterDate
-      )
+      filtered = filtered.filter((record) => {
+        // Use display date from V2 system (approved slot or primary)
+        const displayDateTime = getDisplayDateTime(record.appointments)
+        const appointmentDate = displayDateTime?.date || record.created_at
+        return new Date(appointmentDate) >= filterDate
+      })
     }
 
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter((record) => {
-        const doctorNameTh = record.appointments?.doctors?.name_th || record.appointments?.doctors?.full_name || ''
-        const doctorNameEn = record.appointments?.doctors?.name_en || record.appointments?.doctors?.full_name || ''
-        const clinicNameTh = record.appointments?.clinics?.name_th || record.appointments?.clinics?.name || ''
-        const clinicNameEn = record.appointments?.clinics?.name_en || record.appointments?.clinics?.name || ''
+        const doctorName = record.appointments?.doctors?.contact_name || ''
+        const departmentName = record.appointments?.departments?.name || ''
         const diagnosisTh = record.diagnosis_th || record.diagnosis || ''
         const diagnosisEn = record.diagnosis_en || record.diagnosis || ''
 
         return (
-          doctorNameTh.toLowerCase().includes(query) ||
-          doctorNameEn.toLowerCase().includes(query) ||
-          clinicNameTh.toLowerCase().includes(query) ||
-          clinicNameEn.toLowerCase().includes(query) ||
+          doctorName.toLowerCase().includes(query) ||
+          departmentName.toLowerCase().includes(query) ||
           diagnosisTh.toLowerCase().includes(query) ||
           diagnosisEn.toLowerCase().includes(query)
         )
@@ -267,13 +266,15 @@ export default function MedicalHistoryPage() {
                         <div className="flex items-center gap-3 mb-2">
                           <Calendar className="w-5 h-5 text-blue-600" />
                           <h3 className="text-lg font-bold text-gray-900">
-                            {new Date(
-                              record.appointments?.appointment_date || record.created_at
-                            ).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })}
+                            {(() => {
+                              // Use V2 display date (approved slot or primary)
+                              const displayDateTime = getDisplayDateTime(record.appointments)
+                              const appointmentDate = displayDateTime?.date || record.created_at
+                              return new Date(appointmentDate).toLocaleDateString(
+                                language === 'th' ? 'th-TH' : 'en-US',
+                                { year: 'numeric', month: 'long', day: 'numeric' }
+                              )
+                            })()}
                           </h3>
                         </div>
 
@@ -281,22 +282,14 @@ export default function MedicalHistoryPage() {
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <User className="w-4 h-4 text-blue-600" />
                             <span>
-                              {language === 'th'
-                                ? record.appointments?.doctors?.name_th ||
-                                  record.appointments?.doctors?.full_name
-                                : record.appointments?.doctors?.name_en ||
-                                  record.appointments?.doctors?.full_name}
+                              {record.appointments?.doctors?.contact_name || 'ไม่ระบุแพทย์'}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Stethoscope className="w-4 h-4 text-blue-600" />
                             <span>
-                              {language === 'th'
-                                ? record.appointments?.clinics?.name_th ||
-                                  record.appointments?.clinics?.name
-                                : record.appointments?.clinics?.name_en ||
-                                  record.appointments?.clinics?.name}
+                              {record.appointments?.departments?.name || 'ไม่ระบุแผนก'}
                             </span>
                           </div>
                         </div>

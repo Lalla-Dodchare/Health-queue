@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useTranslation } from '@/hooks/useTranslation'
-import { Search, Stethoscope, MapPin, Clock, X } from 'lucide-react'
+import { Search, Stethoscope, X } from 'lucide-react'
 
 export default function SearchDoctor({ isOpen, onClose }) {
   const router = useRouter()
@@ -49,19 +49,15 @@ export default function SearchDoctor({ isOpen, onClose }) {
         .from('doctors')
         .select(`
           id,
-          user_id,
-          full_name,
-          name_th,
-          name_en,
-          specialization,
-          specialty_th,
-          specialty_en,
-          hospital_branch,
-          profile_image,
-          available_days,
-          consultation_fee
+          contact_name,
+          contact_email,
+          specialty,
+          branch_id,
+          department_id,
+          status
         `)
-        .or(`full_name.ilike.%${searchQuery}%,name_th.ilike.%${searchQuery}%,name_en.ilike.%${searchQuery}%,specialization.ilike.%${searchQuery}%,specialty_th.ilike.%${searchQuery}%,specialty_en.ilike.%${searchQuery}%`)
+        .eq('status', 'active')
+        .or(`contact_name.ilike.%${searchQuery}%,specialty.ilike.%${searchQuery}%`)
         .limit(10)
 
       if (error) throw error
@@ -101,26 +97,14 @@ export default function SearchDoctor({ isOpen, onClose }) {
     onClose?.()
   }
 
-  // Get doctor name based on language
+  // Get doctor name
   const getDoctorName = (doctor) => {
-    if (language === 'en' && doctor.name_en) {
-      return doctor.name_en
-    }
-    if (language === 'th' && doctor.name_th) {
-      return doctor.name_th
-    }
-    return doctor.full_name || 'Unknown Doctor'
+    return doctor.contact_name || 'Unknown Doctor'
   }
 
-  // Get specialty based on language
+  // Get specialty
   const getSpecialty = (doctor) => {
-    if (language === 'en' && doctor.specialty_en) {
-      return doctor.specialty_en
-    }
-    if (language === 'th' && doctor.specialty_th) {
-      return doctor.specialty_th
-    }
-    return doctor.specialization || 'General Practice'
+    return doctor.specialty || 'General Practice'
   }
 
   return (
@@ -174,17 +158,9 @@ export default function SearchDoctor({ isOpen, onClose }) {
                   <div className="flex items-start gap-4">
                     {/* Doctor Avatar */}
                     <div className="flex-shrink-0">
-                      {doctor.profile_image ? (
-                        <img
-                          src={doctor.profile_image}
-                          alt={getDoctorName(doctor)}
-                          className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-xl">
-                          {getDoctorName(doctor).charAt(0)}
-                        </div>
-                      )}
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-xl">
+                        {getDoctorName(doctor).charAt(0)}
+                      </div>
                     </div>
 
                     {/* Doctor Info */}
@@ -193,30 +169,12 @@ export default function SearchDoctor({ isOpen, onClose }) {
                         {getDoctorName(doctor)}
                       </h3>
 
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2">
                         <Stethoscope className="w-4 h-4 text-blue-500" />
                         <span className="text-sm text-gray-600">
                           {getSpecialty(doctor)}
                         </span>
                       </div>
-
-                      {doctor.hospital_branch && (
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-500">
-                            {t('search.branch')}: {doctor.hospital_branch}
-                          </span>
-                        </div>
-                      )}
-
-                      {doctor.available_days && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600">
-                            {t('search.availableSlots')}: {doctor.available_days}
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Book Button */}

@@ -26,8 +26,13 @@ export default function BookAppointmentPage() {
   const [selectedBranch, setSelectedBranch] = useState(null)
   const [selectedClinic, setSelectedClinic] = useState(null)
   const [selectedDoctor, setSelectedDoctor] = useState(null)
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [selectedTime, setSelectedTime] = useState(null)
+  // V2: Two-date booking system
+  const [primaryDate, setPrimaryDate] = useState(null)
+  const [primaryTime, setPrimaryTime] = useState(null)
+  const [secondaryDate, setSecondaryDate] = useState(null)
+  const [secondaryTime, setSecondaryTime] = useState(null)
+  const [isPrimaryFlexible, setIsPrimaryFlexible] = useState(false)
+  const [isSecondaryFlexible, setIsSecondaryFlexible] = useState(false)
   const [notes, setNotes] = useState('')
   const [symptoms, setSymptoms] = useState('')
 
@@ -65,44 +70,72 @@ export default function BookAppointmentPage() {
       const { data, error } = await supabase
         .from('branches')
         .select('*')
-        .order('name_th', { ascending: true })
+        .order('name', { ascending: true })
 
       if (error) throw error
-      setBranches(data || [])
+
+      // Map to expected format (branches only have 'name', not 'name_th'/'name_en')
+      const mappedBranches = data?.map(branch => ({
+        ...branch,
+        name_th: branch.name, // Map 'name' to 'name_th' for compatibility
+        name_en: branch.name  // Map 'name' to 'name_en' for compatibility
+      })) || []
+
+      setBranches(mappedBranches)
+      console.log(`✅ Loaded ${mappedBranches.length} branches`)
     } catch (error) {
       console.error('Error loading branches:', error)
+      setBranches([])
     }
   }
 
-  // Load clinics when branch is selected
+  // Load departments when branch is selected
   const loadClinics = async (branchId) => {
     try {
+      // Query departments directly by branch_id (after running migration)
       const { data, error } = await supabase
-        .from('clinics')
-        .select('*')
+        .from('departments')
+        .select('id, name')
         .eq('branch_id', branchId)
-        .order('name_th', { ascending: true })
+        .order('name', { ascending: true })
 
       if (error) throw error
-      setClinics(data || [])
+
+      // Map to expected format
+      const departments = data?.map(dept => ({
+        id: dept.id,
+        name_th: dept.name, // Use single 'name' field for Thai
+        name_en: dept.name  // Use same 'name' for English
+      })) || []
+
+      setClinics(departments) // Keep variable name for compatibility
+
+      console.log(`✅ Loaded ${departments.length} departments for branch ${branchId}`)
     } catch (error) {
-      console.error('Error loading clinics:', error)
+      console.error('Error loading departments:', error)
+      setClinics([])
     }
   }
 
-  // Load doctors when clinic is selected
-  const loadDoctors = async (clinicId) => {
+  // Load doctors when department is selected
+  const loadDoctors = async (departmentId) => {
     try {
       const { data, error } = await supabase
         .from('doctors')
         .select('*')
-        .eq('clinic_id', clinicId)
+        .eq('department_id', departmentId)
         .order('name_th', { ascending: true })
 
       if (error) throw error
       setDoctors(data || [])
+
+      // Log for debugging if no doctors found
+      if (!data || data.length === 0) {
+        console.warn(`⚠️ No doctors found for department_id: ${departmentId}`)
+      }
     } catch (error) {
       console.error('Error loading doctors:', error)
+      setDoctors([])
     }
   }
 
@@ -165,10 +198,27 @@ export default function BookAppointmentPage() {
     return filtered
   }
 
-  // Handle booking confirmation
+  // Handle booking confirmation (V2: Two-date system)
   const handleConfirmBooking = async () => {
-    if (!selectedDate || !selectedTime) {
-      alert(t('booking.selectDateTimeFirst') || 'กรุณาเลือกวันและเวลา')
+    // Validate primary date/time (required)
+    if (!primaryDate || !primaryTime) {
+      alert(t('booking.selectPrimaryDateTimeFirst') || 'กรุณาเลือกวันและเวลาหลัก')
+      return
+    }
+
+    // Validate secondary date/time (both or neither)
+    if ((secondaryDate && !secondaryTime) || (!secondaryDate && secondaryTime)) {
+      alert(language === 'th'
+        ? 'หากต้องการเสนอวันสำรอง กรุณาเลือกทั้งวันและเวลา'
+        : 'Please select both date and time for secondary option')
+      return
+    }
+
+    // Check if dates are the same
+    if (secondaryDate && primaryDate === secondaryDate && primaryTime === secondaryTime) {
+      alert(language === 'th'
+        ? 'วันและเวลาหลักกับสำรองต้องไม่เหมือนกัน'
+        : 'Primary and secondary dates must be different')
       return
     }
 
@@ -179,19 +229,25 @@ export default function BookAppointmentPage() {
           user_id: user.id,
           doctor_id: selectedDoctor.id,
           branch_id: selectedBranch.id,
-          clinic_id: selectedClinic.id,
-          appointment_date: selectedDate,
-          appointment_time: selectedTime,
+          department_id: selectedClinic.id, // Fixed: departments not clinics
+          // V2 fields
+          primary_date: primaryDate,
+          primary_time: primaryTime,
+          secondary_date: secondaryDate || null,
+          secondary_time: secondaryTime || null,
+          is_primary_flexible: isPrimaryFlexible,
+          is_secondary_flexible: isSecondaryFlexible,
+          approved_slot: null, // Admin will approve later
           symptoms: symptoms.trim() || null,
           notes: notes.trim() || null,
-          status: 'confirmed',
+          status: 'pending', // V2: pending until admin approves
           created_at: new Date().toISOString(),
         })
         .select()
 
       if (error) throw error
 
-      alert(t('booking.confirmationMessage') || 'จองนัดหมายสำเร็จ!')
+      alert(t('booking.confirmationMessage') || 'ส่งคำขอนัดหมายสำเร็จ! รอแอดมินอนุมัติ')
       router.push('/dashboard/appointments')
     } catch (error) {
       console.error('Error creating appointment:', error)
@@ -575,14 +631,16 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {/* Step 4: Select Date & Time */}
+        {/* Step 4: Select Date & Time (V2: Two-date system) */}
         {currentStep === 4 && (
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               {t('booking.selectDateTime') || 'เลือกวันและเวลา'}
             </h2>
             <p className="text-gray-600 mb-6">
-              {t('booking.selectDateTimeDescription') || 'กรุณาเลือกวันและเวลาที่คุณต้องการนัดหมาย'}
+              {language === 'th'
+                ? 'เลือกวันและเวลาที่ต้องการ 2 ตัวเลือก (หลัก + สำรอง) เพื่อให้แอดมินเลือกอนุมัติ'
+                : 'Select 2 date/time options (primary + secondary) for admin to approve'}
             </p>
 
             {/* Booking Summary */}
@@ -597,40 +655,127 @@ export default function BookAppointmentPage() {
               </div>
             </div>
 
-            {/* Date Picker (Simple version - you can enhance this) */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t('booking.date') || 'วันที่'}
+            {/* PRIMARY DATE/TIME */}
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 mb-6 border-2 border-blue-200">
+              <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
+                <span className="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm">1</span>
+                {language === 'th' ? 'วันและเวลาหลัก (บังคับ)' : 'Primary Date & Time (Required)'}
+              </h3>
+
+              {/* Primary Date Picker */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t('booking.date') || 'วันที่'}
+                </label>
+                <input
+                  type="date"
+                  value={primaryDate || ''}
+                  onChange={(e) => setPrimaryDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Primary Time Picker */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t('booking.time') || 'เวลา'}
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'].map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => setPrimaryTime(time)}
+                      className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                        primaryTime === time
+                          ? 'border-blue-500 bg-blue-500 text-white font-semibold'
+                          : 'border-gray-200 hover:border-blue-300 bg-white'
+                      }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Flexible checkbox */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isPrimaryFlexible}
+                  onChange={(e) => setIsPrimaryFlexible(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">
+                  {language === 'th'
+                    ? 'ยืดหยุ่นได้ (ถ้าเวลาใกล้เคียงว่าง สามารถเลื่อนได้)'
+                    : 'Flexible (can adjust time if similar slots available)'}
+                </span>
               </label>
-              <input
-                type="date"
-                value={selectedDate || ''}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
             </div>
 
-            {/* Time Picker */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t('booking.time') || 'เวลา'}
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'].map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`px-4 py-3 rounded-lg border-2 transition-all ${
-                      selectedTime === time
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-blue-300'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
+            {/* SECONDARY DATE/TIME (OPTIONAL) */}
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6 mb-6 border-2 border-purple-200">
+              <h3 className="text-lg font-bold text-purple-900 mb-2 flex items-center gap-2">
+                <span className="bg-purple-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm">2</span>
+                {language === 'th' ? 'วันและเวลาสำรอง (ถ้ามี)' : 'Secondary Date & Time (Optional)'}
+              </h3>
+              <p className="text-sm text-purple-700 mb-4">
+                {language === 'th'
+                  ? 'หากวันหลักเต็ม แอดมินจะพิจารณาวันสำรองนี้แทน'
+                  : 'If primary slot is unavailable, admin will consider this alternative'}
+              </p>
+
+              {/* Secondary Date Picker */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t('booking.date') || 'วันที่'}
+                </label>
+                <input
+                  type="date"
+                  value={secondaryDate || ''}
+                  onChange={(e) => setSecondaryDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
               </div>
+
+              {/* Secondary Time Picker */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t('booking.time') || 'เวลา'}
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'].map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => setSecondaryTime(time)}
+                      className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                        secondaryTime === time
+                          ? 'border-purple-500 bg-purple-500 text-white font-semibold'
+                          : 'border-gray-200 hover:border-purple-300 bg-white'
+                      }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Flexible checkbox */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isSecondaryFlexible}
+                  onChange={(e) => setIsSecondaryFlexible(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded"
+                />
+                <span className="text-sm text-gray-700">
+                  {language === 'th'
+                    ? 'ยืดหยุ่นได้ (ถ้าเวลาใกล้เคียงว่าง สามารถเลื่อนได้)'
+                    : 'Flexible (can adjust time if similar slots available)'}
+                </span>
+              </label>
             </div>
 
             {/* Symptoms/Chief Complaint */}
@@ -684,10 +829,10 @@ export default function BookAppointmentPage() {
               </button>
               <button
                 onClick={handleConfirmBooking}
-                disabled={!selectedDate || !selectedTime}
+                disabled={!primaryDate || !primaryTime}
                 className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                {t('booking.confirmBooking') || 'ยืนยันการจอง'}
+                {t('booking.confirmBooking') || 'ส่งคำขอนัดหมาย'}
               </button>
             </div>
           </div>

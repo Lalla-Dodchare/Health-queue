@@ -24,8 +24,8 @@ import {
   ChevronRight,
   Filter,
   Search,
-  CreditCard,
 } from 'lucide-react'
+import { getDisplayDateTime, formatAppointmentDateTime } from '@/utils/appointmentHelpers'
 
 export default function MyAppointmentsPage() {
   const router = useRouter()
@@ -47,6 +47,28 @@ export default function MyAppointmentsPage() {
       setUser(currentUser)
       await loadAppointments(currentUser.id)
       setLoading(false)
+
+      // Subscribe to real-time updates
+      const subscription = supabase
+        .channel('user_appointments_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'appointments',
+            filter: `user_id=eq.${currentUser.id}`
+          },
+          (payload) => {
+            console.log('🔔 Appointment updated:', payload)
+            loadAppointments(currentUser.id)
+          }
+        )
+        .subscribe()
+
+      return () => {
+        subscription.unsubscribe()
+      }
     }
     checkAuth()
   }, [router])
@@ -57,37 +79,34 @@ export default function MyAppointmentsPage() {
         .from('appointments')
         .select(`
           id,
-          appointment_date,
-          appointment_time,
+          primary_date,
+          primary_time,
+          secondary_date,
+          secondary_time,
+          approved_option,
+          primary_flexible,
+          secondary_flexible,
           status,
           notes,
           created_at,
-          doctors (
+          doctors!appointments_doctor_id_fkey (
             id,
-            full_name,
-            name_th,
-            name_en,
-            specialization,
-            specialty_th,
-            specialty_en
+            contact_name,
+            contact_email,
+            specialty
           ),
-          branches (
+          branches!appointments_branch_id_fkey (
             id,
-            name,
-            name_th,
-            name_en,
-            address
+            name
           ),
-          clinics (
+          departments!appointments_department_id_fkey (
             id,
-            name,
-            name_th,
-            name_en
+            name
           )
         `)
         .eq('user_id', userId)
-        .order('appointment_date', { ascending: false })
-        .order('appointment_time', { ascending: false })
+        .order('primary_date', { ascending: false })
+        .order('primary_time', { ascending: false })
 
       if (error) throw error
 
@@ -106,29 +125,28 @@ export default function MyAppointmentsPage() {
   const filterAppointments = () => {
     let filtered = appointments
 
-    // Filter by tab
+    // Filter by tab (V2: use display date from approved slot or primary)
     const today = new Date().toISOString().split('T')[0]
     if (activeTab === 'upcoming') {
-      filtered = filtered.filter(
-        (apt) => apt.appointment_date >= today && apt.status !== 'cancelled'
-      )
+      filtered = filtered.filter((apt) => {
+        const displayDateTime = getDisplayDateTime(apt)
+        return displayDateTime && displayDateTime.date >= today && apt.status !== 'cancelled' && apt.status !== 'rejected'
+      })
     } else if (activeTab === 'past') {
-      filtered = filtered.filter(
-        (apt) => apt.appointment_date < today && apt.status !== 'cancelled'
-      )
+      filtered = filtered.filter((apt) => {
+        const displayDateTime = getDisplayDateTime(apt)
+        return displayDateTime && displayDateTime.date < today && apt.status !== 'cancelled' && apt.status !== 'rejected'
+      })
     } else if (activeTab === 'cancelled') {
-      filtered = filtered.filter((apt) => apt.status === 'cancelled')
+      // Include both cancelled (by user) and rejected (by admin)
+      filtered = filtered.filter((apt) => apt.status === 'cancelled' || apt.status === 'rejected')
     }
 
     // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter((apt) => {
-        const doctorName = language === 'th'
-          ? apt.doctors?.name_th || apt.doctors?.full_name
-          : apt.doctors?.name_en || apt.doctors?.full_name
-        const branchName = language === 'th'
-          ? apt.branches?.name_th || apt.branches?.name
-          : apt.branches?.name_en || apt.branches?.name
+        const doctorName = apt.doctors?.contact_name || ''
+        const branchName = apt.branches?.name || ''
 
         return (
           doctorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,9 +161,11 @@ export default function MyAppointmentsPage() {
   const getStatusBadge = (status) => {
     const badges = {
       confirmed: { bg: 'bg-green-100', text: 'text-green-700', label: language === 'th' ? 'ยืนยันแล้ว' : 'Confirmed' },
+      approved: { bg: 'bg-green-100', text: 'text-green-700', label: language === 'th' ? 'อนุมัติแล้ว' : 'Approved' },
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: language === 'th' ? 'รอยืนยัน' : 'Pending' },
       completed: { bg: 'bg-blue-100', text: 'text-blue-700', label: language === 'th' ? 'เสร็จสิ้น' : 'Completed' },
       cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: language === 'th' ? 'ยกเลิก' : 'Cancelled' },
+      rejected: { bg: 'bg-red-100', text: 'text-red-700', label: language === 'th' ? 'ปฏิเสธ' : 'Rejected' },
     }
     const badge = badges[status] || badges.pending
     return (
@@ -272,83 +292,77 @@ export default function MyAppointmentsPage() {
               </button>
             </div>
           ) : (
-            filteredAppointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <UserIcon className="w-6 h-6 text-blue-600" />
+            filteredAppointments.map((appointment) => {
+              const displayDateTime = getDisplayDateTime(appointment)
+              const formatted = displayDateTime
+                ? formatAppointmentDateTime(displayDateTime.date, displayDateTime.time, language === 'th' ? 'th-TH' : 'en-US')
+                : { date: 'N/A', time: 'N/A' }
+
+              return (
+                <div
+                  key={appointment.id}
+                  className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <UserIcon className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">
+                            {appointment.doctors?.contact_name || 'ไม่ระบุแพทย์'}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {appointment.doctors?.specialty || 'ทั่วไป'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {language === 'th'
-                            ? appointment.doctors?.name_th || appointment.doctors?.full_name
-                            : appointment.doctors?.name_en || appointment.doctors?.full_name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {language === 'th'
-                            ? appointment.doctors?.specialty_th || appointment.doctors?.specialization
-                            : appointment.doctors?.specialty_en || appointment.doctors?.specialization}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar className="w-4 h-4" />
+                          <span>{formatted.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatted.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin className="w-4 h-4" />
+                          <span>{appointment.branches?.name || 'ไม่ระบุสาขา'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Stethoscope className="w-4 h-4" />
+                          <span>{appointment.departments?.name || 'ไม่ระบุแผนก'}</span>
+                        </div>
+                      </div>
+
+                      {/* Show alternative date if pending */}
+                      {appointment.status === 'pending' && displayDateTime?.hasAlternative && (
+                        <div className="mt-3 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                          <p className="text-xs text-purple-700">
+                            {language === 'th' ? '🔄 มีตัวเลือกสำรอง:' : '🔄 Alternative date:'}{' '}
+                            {formatAppointmentDateTime(
+                              displayDateTime.alternativeDate,
+                              displayDateTime.alternativeTime,
+                              language === 'th' ? 'th-TH' : 'en-US'
+                            ).date} • {displayDateTime.alternativeTime}
+                          </p>
+                        </div>
+                      )}
+
+                      {appointment.notes && (
+                        <p className="text-sm text-gray-500 mt-3">
+                          {t('appointments.notes')}: {appointment.notes}
                         </p>
-                      </div>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {new Date(appointment.appointment_date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Clock className="w-4 h-4" />
-                        <span>{appointment.appointment_time}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>
-                          {language === 'th'
-                            ? appointment.branches?.name_th || appointment.branches?.name
-                            : appointment.branches?.name_en || appointment.branches?.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Stethoscope className="w-4 h-4" />
-                        <span>
-                          {language === 'th'
-                            ? appointment.clinics?.name_th || appointment.clinics?.name
-                            : appointment.clinics?.name_en || appointment.clinics?.name}
-                        </span>
-                      </div>
-                    </div>
+                    <div className="flex flex-col items-end gap-3">
+                      {getStatusBadge(appointment.status)}
 
-                    {appointment.notes && (
-                      <p className="text-sm text-gray-500 mt-3">
-                        {t('appointments.notes')}: {appointment.notes}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-end gap-3">
-                    {getStatusBadge(appointment.status)}
-
-                    {activeTab === 'upcoming' && appointment.status !== 'cancelled' && (
-                      <>
-                        <button
-                          onClick={() => router.push(`/dashboard/payment/${appointment.id}`)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-1"
-                        >
-                          <CreditCard className="w-4 h-4" />
-                          {language === 'th' ? 'ชำระเงิน' : 'Pay Now'}
-                        </button>
+                      {activeTab === 'upcoming' && appointment.status !== 'cancelled' && (
                         <button
                           onClick={() => handleCancelAppointment(appointment.id)}
                           className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
@@ -356,12 +370,12 @@ export default function MyAppointmentsPage() {
                           <X className="w-4 h-4" />
                           {t('appointments.cancel') || 'ยกเลิก'}
                         </button>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </main>

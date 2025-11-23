@@ -14,9 +14,8 @@ export default function BookAppointmentPage() {
   const { t } = useTranslation()
 
   useEffect(() => {
-    // Redirect to the main booking flow
-    // You can change this to your actual booking page path
-    router.push('/book')
+    // Redirect to the new booking flow (V2) - use replace to avoid history stack issues
+    router.replace('/dashboard/book-appointment/new')
   }, [router])
 
   return (

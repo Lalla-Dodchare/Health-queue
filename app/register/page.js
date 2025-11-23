@@ -1,18 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { registerWithEmail } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { UserPlus, ArrowLeft } from 'lucide-react'
+import { UserPlus, ArrowLeft, Flag } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const userType = searchParams.get('type') // 'thai' or null (default)
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     fullName: '',
+    phone: '',
+    idCard: '', // For Thai users only
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -49,6 +55,25 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate Thai-specific fields
+    if (userType === 'thai') {
+      if (!formData.phone.trim()) {
+        setError('กรุณากรอกเบอร์โทรศัพท์')
+        setLoading(false)
+        return
+      }
+      if (!formData.idCard.trim()) {
+        setError('กรุณากรอกเลขบัตรประชาชน')
+        setLoading(false)
+        return
+      }
+      if (formData.idCard.length !== 13) {
+        setError('เลขบัตรประชาชนต้องเป็น 13 หลัก')
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       console.log('🔵 Starting registration...')
 
@@ -62,6 +87,24 @@ export default function RegisterPage() {
         setError(result.error)
         setLoading(false)
         return
+      }
+
+      // Update profile with Thai-specific data
+      if (userType === 'thai' && result.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            phone: formData.phone,
+            id_card: formData.idCard,
+            is_foreign: false,
+            preferred_language: 'th',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', result.user.id)
+
+        if (profileError) {
+          console.error('Profile update error:', profileError)
+        }
       }
 
       console.log('✅ Registration successful!')
@@ -117,15 +160,21 @@ export default function RegisterPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="p-4 bg-blue-100 rounded-full">
-                <UserPlus className="w-8 h-8 text-blue-600" />
+              <div className={`p-4 rounded-full ${userType === 'thai' ? 'bg-blue-100' : 'bg-purple-100'}`}>
+                {userType === 'thai' ? (
+                  <Flag className="w-8 h-8 text-blue-600" />
+                ) : (
+                  <UserPlus className="w-8 h-8 text-purple-600" />
+                )}
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              สมัครสมาชิก
+              {userType === 'thai' ? 'ลงทะเบียนคนไทย' : 'สมัครสมาชิก'}
             </h1>
             <p className="text-gray-600">
-              สร้างบัญชีเพื่อใช้งาน Health Queue
+              {userType === 'thai'
+                ? 'สำหรับพลเมืองไทย - ใช้เลขบัตรประชาชน'
+                : 'สร้างบัญชีเพื่อใช้งาน Health Queue'}
             </p>
           </div>
 
@@ -150,6 +199,53 @@ export default function RegisterPage() {
                 disabled={loading}
               />
             </div>
+
+            {/* Thai-specific fields */}
+            {userType === 'thai' && (
+              <>
+                <div>
+                  <label
+                    htmlFor="idCard"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    เลขบัตรประชาชน * (13 หลัก)
+                  </label>
+                  <input
+                    id="idCard"
+                    name="idCard"
+                    type="text"
+                    value={formData.idCard}
+                    onChange={handleChange}
+                    required
+                    maxLength={13}
+                    pattern="[0-9]{13}"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    placeholder="1234567890123"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    เบอร์โทรศัพท์ *
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    placeholder="08x-xxx-xxxx"
+                    disabled={loading}
+                  />
+                </div>
+              </>
+            )}
 
             <div>
               <label

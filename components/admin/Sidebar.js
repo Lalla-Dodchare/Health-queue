@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Settings,
   LogOut,
+  Calendar,
 } from 'lucide-react'
 import { logout } from '@/lib/auth'
 
@@ -21,6 +22,11 @@ const navigation = [
     name: 'แดชบอร์ด',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    name: 'จัดการนัดหมาย',
+    href: '/admin/appointments',
+    icon: Calendar,
   },
   {
     name: 'จัดการผู้ใช้งาน',

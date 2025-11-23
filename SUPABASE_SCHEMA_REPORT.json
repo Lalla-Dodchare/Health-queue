@@ -1,0 +1,174 @@
+{
+  "timestamp": "2025-11-20T09:28:53.502Z",
+  "database_url": "https://ruiglnhjgvvoynhvtugt.supabase.co",
+  "tables": [
+    {
+      "name": "profiles",
+      "schema": "public",
+      "columns": [],
+      "sample_data": [
+        {
+          "id": "34f9ea08-26ac-4568-ba4e-efe2a9ace677",
+          "full_name": "ทพญ.วิไล เจริญดี",
+          "phone": null,
+          "date_of_birth": null,
+          "address": null,
+          "role": "user",
+          "points": 0,
+          "created_at": "2025-11-08T12:46:54.978796+00:00",
+          "email": "doctor9@phq.com",
+          "updated_at": "2025-11-19T19:54:22.202568+00:00",
+          "allergies": null,
+          "emergency_contact_name": null,
+          "emergency_contact_phone": null,
+          "notification_preferences": {
+            "health_tips": false,
+            "sms_notifications": false,
+            "email_notifications": true,
+            "appointment_reminders": true
+          }
+        },
+        {
+          "id": "49115d88-7684-41c9-9b7a-468fbbb21942",
+          "full_name": "ทพญ.สมหญิง รักษาดี",
+          "phone": null,
+          "date_of_birth": null,
+          "address": null,
+          "role": "user",
+          "points": 0,
+          "created_at": "2025-11-08T12:46:54.978796+00:00",
+          "email": "doctor1@phq.com",
+          "updated_at": "2025-11-19T19:54:22.202568+00:00",
+          "allergies": null,
+          "emergency_contact_name": null,
+          "emergency_contact_phone": null,
+          "notification_preferences": {
+            "health_tips": false,
+            "sms_notifications": false,
+            "email_notifications": true,
+            "appointment_reminders": true
+          }
+        }
+      ],
+      "row_count_sample": 2
+    },
+    {
+      "name": "admins",
+      "schema": "public",
+      "columns": [],
+      "sample_data": [
+        {
+          "id": "3a17851f-1886-4013-b463-8738b529f2da",
+          "status": "active",
+          "created_at": "2025-11-14T08:09:07.836475+00:00",
+          "user_id": "a663f768-752d-4dd1-afe8-44f0642163ef"
+        }
+      ],
+      "row_count_sample": 1
+    },
+    {
+      "name": "admin_messages",
+      "schema": "public",
+      "columns": [],
+      "sample_data": [
+        {
+          "id": "4e801ca1-72b5-4953-b224-07d9e707642e",
+          "sender_id": "9e098a04-d6f7-451d-9baa-072de967eb2b",
+          "sender_role": "user",
+          "recipient_id": null,
+          "message": "สวัสดีครับ",
+          "message_type": "text",
+          "metadata": null,
+          "is_read": false,
+          "read_at": null,
+          "created_at": "2025-11-15T12:07:24.82+00:00",
+          "updated_at": "2025-11-15T12:07:26.103259+00:00",
+          "expires_at": "2026-01-14T12:07:26.103259+00:00",
+          "user_id": null
+        },
+        {
+          "id": "6b9f8045-e51c-4ee7-b161-8614d0ad02d0",
+          "sender_id": "9e098a04-d6f7-451d-9baa-072de967eb2b",
+          "sender_role": "user",
+          "recipient_id": null,
+          "message": "ไม่เอาละจะคุยกับนายแทน",
+          "message_type": "text",
+          "metadata": null,
+          "is_read": false,
+          "read_at": null,
+          "created_at": "2025-11-17T12:12:03.854756+00:00",
+          "updated_at": "2025-11-17T12:12:03.854756+00:00",
+          "expires_at": "2026-01-16T12:12:03.854756+00:00",
+          "user_id": null
+        }
+      ],
+      "row_count_sample": 2
+    },
+    {
+      "name": "appointments",
+      "schema": "public",
+      "columns": [],
+      "sample_data": [],
+      "row_count_sample": 0
+    },
+    {
+      "name": "doctors",
+      "schema": "public",
+      "columns": [],
+      "sample_data": [
+        {
+          "id": "003719a1-612e-4c94-b26a-27bfd246e595",
+          "email": "doctor59@phq.com",
+          "name": "พญ.กัญญา อ่อนโยน",
+          "specialty": "ฉุกเฉิน",
+          "fee": 1090,
+          "image_url": null,
+          "available_days": [
+            "MON",
+            "TUE",
+            "WED",
+            "THU",
+            "FRI"
+          ],
+          "status": "active",
+          "created_at": "2025-11-08T12:46:54.978796+00:00",
+          "user_id": "003719a1-612e-4c94-b26a-27bfd246e595",
+          "branch_id": null,
+          "department_id": null
+        }
+      ],
+      "row_count_sample": 1
+    },
+    {
+      "name": "departments",
+      "schema": "public",
+      "columns": [],
+      "sample_data": [
+        {
+          "id": 1,
+          "name": "สุขภาพสตรี",
+          "code": null,
+          "created_at": "2025-11-18T17:15:39.328525+00:00"
+        },
+        {
+          "id": 2,
+          "name": "ระบบทางเดินอาหารและตับ",
+          "code": null,
+          "created_at": "2025-11-18T17:15:39.328525+00:00"
+        }
+      ],
+      "row_count_sample": 2
+    }
+  ],
+  "foreign_keys": [],
+  "rls_policies": [],
+  "indexes": [],
+  "enum_types": [],
+  "important_tables_status": {
+    "profiles": "✅ EXISTS",
+    "admins": "✅ EXISTS",
+    "admin_messages": "✅ EXISTS",
+    "appointments": "✅ EXISTS",
+    "queue_entries": "❌ NOT FOUND"
+  }
+}

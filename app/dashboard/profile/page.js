@@ -54,7 +54,6 @@ export default function ProfilePage() {
     email_notifications: true,
     sms_notifications: false,
     appointment_reminders: true,
-    health_tips: false,
   })
 
   // Load user data
@@ -162,8 +161,25 @@ export default function ProfilePage() {
     setSaveMessage('')
 
     try {
+      // Check if email changed
+      const emailChanged = formData.email !== user.email
+
+      // If email changed, update Supabase Auth email
+      if (emailChanged) {
+        const { data, error: emailError } = await supabase.auth.updateUser({
+          email: formData.email
+        })
+
+        if (emailError) {
+          console.error('❌ Email update error:', emailError)
+          throw new Error('ไม่สามารถเปลี่ยนอีเมลได้: ' + emailError.message)
+        }
+
+        console.log('✅ Email change initiated, confirmation sent to new email')
+        setSaveMessage('ส่งลิงก์ยืนยันไปที่อีเมลใหม่แล้ว กรุณาตรวจสอบอีเมล')
+      }
+
       // Update profile in Supabase profiles table
-      // NOTE: After running the SQL migration, this will include all new fields
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -184,7 +200,11 @@ export default function ProfilePage() {
       }
 
       console.log('✅ Profile saved successfully')
-      setSaveMessage(t('profile.saved'))
+
+      if (!emailChanged) {
+        setSaveMessage(t('profile.saved') || 'บันทึกข้อมูลสำเร็จ')
+      }
+
       setEditing(false)
 
       // Update local user state
@@ -200,10 +220,10 @@ export default function ProfilePage() {
         hint: error.hint,
         code: error.code
       })
-      setSaveMessage(t('common.error'))
+      setSaveMessage(error.message || t('common.error') || 'เกิดข้อผิดพลาด')
     } finally {
       setSaving(false)
-      setTimeout(() => setSaveMessage(''), 3000)
+      setTimeout(() => setSaveMessage(''), 5000)
     }
   }
 
@@ -346,9 +366,14 @@ export default function ProfilePage() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                disabled={true}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                disabled={!editing}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
+              {editing && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ การเปลี่ยนอีเมลจะส่งลิงก์ยืนยันไปที่อีเมลใหม่
+                </p>
+              )}
             </div>
 
             <div>
@@ -575,22 +600,6 @@ export default function ProfilePage() {
                   type="checkbox"
                   checked={notifications.appointment_reminders}
                   onChange={() => handleNotificationChange('appointment_reminders')}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-gray-900">{t('profile.healthTips')}</p>
-                <p className="text-sm text-gray-600">{t('profile.healthTipsDesc')}</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notifications.health_tips}
-                  onChange={() => handleNotificationChange('health_tips')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

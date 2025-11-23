@@ -38,11 +38,41 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
     }
   }, [isOpen, isMinimized])
 
+  // Mark all messages as read when chat opens
+  useEffect(() => {
+    if (isOpen && userId) {
+      // Reset unread count immediately when opening chat
+      setUnreadCount(0)
+
+      // Mark all unread messages as read in database
+      const markAllAsRead = async () => {
+        try {
+          const { error } = await supabase
+            .from('admin_messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq('recipient_id', userId)
+            .eq('is_read', false)
+
+          if (error) {
+            console.error('Error marking messages as read:', error)
+          }
+        } catch (error) {
+          console.error('Error marking messages as read:', error)
+        }
+      }
+
+      markAllAsRead()
+    }
+  }, [isOpen, userId])
+
   // Load messages on mount
   useEffect(() => {
     if (userId) {
       loadMessages()
-      loadUnreadCount()
+      // Only load unread count if chat is closed
+      if (!isOpen) {
+        loadUnreadCount()
+      }
     } else {
       // If no userId (not logged in), show welcome message
       setMessages([
@@ -56,7 +86,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
         },
       ])
     }
-  }, [userId, language])
+  }, [userId, language, isOpen])
 
   // Real-time subscription for admin messages
   useEffect(() => {
@@ -74,7 +104,10 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new])
-          setUnreadCount((prev) => prev + 1)
+          // Only increment unreadCount if chat is closed
+          if (!isOpen) {
+            setUnreadCount((prev) => prev + 1)
+          }
         }
       )
       .subscribe()
@@ -82,7 +115,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user' }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId])
+  }, [userId, isOpen])
 
   // Load messages from database
   const loadMessages = async () => {
