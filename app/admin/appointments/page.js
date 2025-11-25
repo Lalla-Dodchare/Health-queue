@@ -54,6 +54,7 @@ export default function AdminAppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [approvalModal, setApprovalModal] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState('primary') // 'primary' or 'secondary'
+  const [sendingEmail, setSendingEmail] = useState(null) // Track which appointment is sending email
 
   // Auth check
   useEffect(() => {
@@ -98,7 +99,9 @@ export default function AdminAppointmentsPage() {
           id,
           full_name,
           email,
-          phone
+          phone,
+          date_of_birth,
+          allergies
         ),
         doctor:doctors!appointments_doctor_id_fkey (
           id,
@@ -113,17 +116,52 @@ export default function AdminAppointmentsPage() {
         department:departments!appointments_department_id_fkey (
           id,
           name
+        ),
+        files:appointment_files (
+          id,
+          file_name,
+          file_url,
+          file_type,
+          file_size,
+          uploaded_at
         )
       `)
-      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error loading appointments:', error)
       return
     }
 
-    setAppointments(data || [])
-    setFilteredAppointments(data || [])
+    // Sort appointments by priority:
+    // 1. pending (รอยืนยัน) - highest priority
+    // 2. approved (อนุมัติแล้ว)
+    // 3. rejected (ยกเลิก) - lowest priority
+    // Within each status, sort by appointment date (earliest first)
+    const sortedData = (data || []).sort((a, b) => {
+      // Define status priority
+      const statusPriority = {
+        'pending': 1,
+        'approved': 2,
+        'rejected': 3
+      }
+
+      const aPriority = statusPriority[a.status] || 999
+      const bPriority = statusPriority[b.status] || 999
+
+      // Sort by status first
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority
+      }
+
+      // Within same status, sort by appointment date (earliest first)
+      const aDate = new Date(a.primary_date + ' ' + a.primary_time)
+      const bDate = new Date(b.primary_date + ' ' + b.primary_time)
+
+      return aDate - bDate
+    })
+
+    setAppointments(sortedData)
+    setFilteredAppointments(sortedData)
   }
 
   // Load appointments on mount and when user changes
@@ -213,6 +251,12 @@ export default function AdminAppointmentsPage() {
 
       if (error) throw error
 
+      // Create appointment data for notifications
+      const appointmentData = {
+        ...selectedAppointment,
+        approved_option: selectedSlot
+      }
+
       // Send email notification to patient
       try {
         const emailResponse = await fetch('/api/appointments/send-notification', {
@@ -230,17 +274,38 @@ export default function AdminAppointmentsPage() {
           console.log('✅ Email sent successfully to:', selectedAppointment.user?.email)
         } else {
           console.error('❌ Failed to send email:', emailResult.error)
-          // Don't fail the approval if email fails, just log it
         }
       } catch (emailError) {
         console.error('❌ Email notification error:', emailError)
-        // Don't fail the approval if email fails
+      }
+
+      // Create in-app notification in database
+      try {
+        const notifResponse = await fetch('/api/appointments/create-approval-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appointmentId: selectedAppointment.id,
+            userId: selectedAppointment.user_id,
+            approvedSlot: selectedSlot
+          })
+        })
+
+        const notifResult = await notifResponse.json()
+
+        if (notifResult.success) {
+          console.log('✅ In-app notification created and reminders scheduled')
+        } else {
+          console.error('❌ Failed to create notification:', notifResult.error)
+        }
+      } catch (notifError) {
+        console.error('❌ Notification creation error:', notifError)
       }
 
       // Reload appointments to update UI
       await loadAppointments()
 
-      alert('อนุมัติการนัดหมายเรียบร้อยแล้ว! อีเมลแจ้งเตือนถูกส่งไปยังผู้ป่วยแล้ว')
+      alert('อนุมัติการนัดหมายเรียบร้อยแล้ว! อีเมลแจ้งเตือนและการแจ้งเตือนในแอปถูกส่งแล้ว')
       setApprovalModal(false)
       setSelectedAppointment(null)
     } catch (error) {
@@ -248,6 +313,35 @@ export default function AdminAppointmentsPage() {
       alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
     } finally {
       setProcessing(null)
+    }
+  }
+
+  // Send email to doctor
+  const handleSendToDoctor = async (appointmentId) => {
+    setSendingEmail(appointmentId)
+
+    try {
+      const response = await fetch('/api/send-doctor-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appointmentId })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('✅ ส่งข้อมูลให้หมอเรียบร้อยแล้ว!\n\n📧 หมอจะได้รับอีเมลพร้อมลิงก์ตอบกลับ')
+
+        // Reload appointments to show updated sent_to_doctor_at timestamp
+        await loadAppointments()
+      } else {
+        alert('❌ เกิดข้อผิดพลาด: ' + (result.error || 'ไม่สามารถส่งอีเมลได้'))
+      }
+    } catch (error) {
+      console.error('Error sending email to doctor:', error)
+      alert('❌ เกิดข้อผิดพลาดในการส่งอีเมล กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setSendingEmail(null)
     }
   }
 
@@ -266,6 +360,9 @@ export default function AdminAppointmentsPage() {
         .eq('id', appointmentId)
 
       if (error) throw error
+
+      // Get appointment data
+      const appointment = appointments.find(apt => apt.id === appointmentId)
 
       // Send email notification to patient
       try {
@@ -288,11 +385,29 @@ export default function AdminAppointmentsPage() {
         } else {
           console.error('❌ Failed to send rejection email:', emailResult.error)
         }
+
+        // Create in-app notification in database
+        const notifResponse = await fetch('/api/appointments/create-rejection-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appointmentId,
+            userId: appointment?.user_id,
+            rejectionReason
+          })
+        })
+
+        const notifResult = await notifResponse.json()
+
+        if (notifResult.success) {
+          console.log('✅ In-app rejection notification created')
+        } else {
+          console.error('❌ Failed to create rejection notification:', notifResult.error)
+        }
       } catch (emailError) {
         console.error('❌ Email notification error:', emailError)
       }
 
-      const appointment = appointments.find(apt => apt.id === appointmentId)
       console.log('📧 Send rejection email to:', appointment?.user?.email)
 
       // Reload appointments to update UI
@@ -302,6 +417,45 @@ export default function AdminAppointmentsPage() {
     } catch (error) {
       console.error('Error rejecting appointment:', error)
       alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setProcessing(null)
+    }
+  }
+
+  // Mark as completed and send follow-up to doctor
+  const handleMarkCompleted = async (appointmentId) => {
+    if (!confirm('ยืนยันว่าการรักษาเสร็จสมบูรณ์แล้ว?\nระบบจะส่งอีเมลให้หมอเพื่ออัปโหลดผลการรักษา')) return
+
+    setProcessing(appointmentId)
+
+    try {
+      // Update status to completed
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', appointmentId)
+
+      if (updateError) throw updateError
+
+      // Send follow-up email to doctor
+      const response = await fetch('/api/send-treatment-followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appointmentId })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('✅ อัปเดตสถานะเป็น "เสร็จสิ้น" และส่งอีเมลให้หมอเรียบร้อยแล้ว')
+      } else {
+        alert('อัปเดตสถานะสำเร็จ แต่ส่งอีเมลล้มเหลว: ' + result.error)
+      }
+
+      await loadAppointments()
+    } catch (error) {
+      console.error('Error:', error)
+      alert('เกิดข้อผิดพลาด: ' + error.message)
     } finally {
       setProcessing(null)
     }
@@ -453,9 +607,49 @@ export default function AdminAppointmentsPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">{appointment.user?.full_name || 'ไม่ระบุชื่อ'}</h3>
                         <p className="text-sm text-gray-600">{appointment.user?.email}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          📅 ได้รับ: {new Date(appointment.created_at).toLocaleString('th-TH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
                       </div>
                     </div>
                     <StatusBadge status={appointment.status} />
+                  </div>
+
+                  {/* Patient Info */}
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-2">ข้อมูลผู้จอง</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      {appointment.user?.phone && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-700">📞 เบอร์:</span>
+                          <span className="font-medium text-blue-900">{appointment.user.phone}</span>
+                        </div>
+                      )}
+                      {appointment.user?.date_of_birth && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-700">🎂 วันเกิด:</span>
+                          <span className="font-medium text-blue-900">
+                            {new Date(appointment.user.date_of_birth).toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {appointment.user?.allergies && (
+                      <div className="mt-2 pt-2 border-t border-blue-200">
+                        <span className="text-red-600 font-medium">⚠️ ประวัติการแพ้:</span>
+                        <p className="text-red-700 mt-1">{appointment.user.allergies}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
@@ -531,25 +725,177 @@ export default function AdminAppointmentsPage() {
                     </div>
                   )}
 
+                  {/* Attached Files */}
+                  {appointment.files && appointment.files.length > 0 && (
+                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-semibold text-green-900">
+                          ไฟล์ที่แนบ ({appointment.files.length})
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {appointment.files.map((file) => (
+                          <div key={file.id} className="flex items-center justify-between p-2 bg-white border border-green-200 rounded">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-lg">
+                                {file.file_type.includes('pdf') ? '📄' :
+                                 file.file_type.includes('image') ? '🖼️' : '📝'}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-gray-900 truncate">{file.file_name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {(file.file_size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={file.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                              เปิดดู
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   {appointment.status === 'pending' && (
-                    <div className="flex gap-3 pt-4 border-t border-gray-200">
+                    <div className="pt-4 border-t border-gray-200 space-y-3">
+                      {/* Send to Doctor Button / Status */}
+                      {appointment.sent_to_doctor_at ? (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium text-green-900">ส่งข้อมูลให้หมอแล้ว</p>
+                              <p className="text-xs text-green-700">
+                                {new Date(appointment.sent_to_doctor_at).toLocaleString('th-TH', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleSendToDoctor(appointment.id)}
+                            disabled={sendingEmail === appointment.id}
+                            className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                          >
+                            ส่งอีกครั้ง
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleSendToDoctor(appointment.id)}
+                          disabled={sendingEmail === appointment.id}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {sendingEmail === appointment.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                              กำลังส่ง...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-5 h-5" />
+                              ส่งข้อมูลให้หมอ
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Approve / Reject Buttons */}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => openApprovalModal(appointment)}
+                          disabled={processing === appointment.id}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <CheckCircle className="w-5 h-5" />
+                          อนุมัติ
+                        </button>
+                        <button
+                          onClick={() => handleReject(appointment.id)}
+                          disabled={processing === appointment.id}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <XCircle className="w-5 h-5" />
+                          ปฏิเสธ
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mark as Completed Button (for approved appointments) */}
+                  {appointment.status === 'approved' && (
+                    <div className="pt-4 border-t border-gray-200">
                       <button
-                        onClick={() => openApprovalModal(appointment)}
+                        onClick={() => handleMarkCompleted(appointment.id)}
                         disabled={processing === appointment.id}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                       >
                         <CheckCircle className="w-5 h-5" />
-                        อนุมัติ
+                        ทำเครื่องหมายว่ารักษาเสร็จแล้ว
                       </button>
-                      <button
-                        onClick={() => handleReject(appointment.id)}
-                        disabled={processing === appointment.id}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <XCircle className="w-5 h-5" />
-                        ปฏิเสธ
-                      </button>
+                    </div>
+                  )}
+
+                  {/* Treatment Info (for completed appointments) */}
+                  {appointment.status === 'completed' && appointment.treatment_note && (
+                    <div className="pt-4 border-t border-gray-200 bg-blue-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-blue-900 mb-2">ผลการรักษา</h4>
+                      <p className="text-sm text-blue-800 whitespace-pre-wrap mb-2">{appointment.treatment_note}</p>
+                      {appointment.treatment_file_url && (() => {
+                        try {
+                          const fileUrls = JSON.parse(appointment.treatment_file_url)
+                          return Array.isArray(fileUrls) ? (
+                            <div className="space-y-2">
+                              {fileUrls.map((url, index) => (
+                                <a
+                                  key={index}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 block"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  ไฟล์ผลการรักษา {index + 1}
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            <a
+                              href={appointment.treatment_file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+                            >
+                              <FileText className="w-4 h-4" />
+                              ดูไฟล์ผลการรักษา
+                            </a>
+                          )
+                        } catch {
+                          return (
+                            <a
+                              href={appointment.treatment_file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+                            >
+                              <FileText className="w-4 h-4" />
+                              ดูไฟล์ผลการรักษา
+                            </a>
+                          )
+                        }
+                      })()}
                     </div>
                   )}
                 </div>

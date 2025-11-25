@@ -35,30 +35,41 @@ export async function GET() {
 
     if (adminError) throw adminError
 
-    // Get today's appointments count
+    // Get today's appointments count (approved appointments where approved date = today)
+    // Use Thailand timezone (UTC+7) to get the correct local date
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }) // en-CA gives YYYY-MM-DD format
 
-    const { count: todayAppointments, error: appointmentError } = await supabase
+    // Query all approved appointments
+    const { data: approvedAppointments, error: appointmentError } = await supabase
       .from('appointments')
-      .select('*', { count: 'exact', head: true })
-      .gte('appointment_date', today.toISOString())
-      .lt('appointment_date', tomorrow.toISOString())
+      .select('id, status, approved_option, primary_date, secondary_date')
+      .eq('status', 'approved')
 
-    // Don't throw error if appointments table doesn't exist yet
-    const appointmentCount = appointmentError ? 0 : (todayAppointments || 0)
+    // Filter appointments where the approved date matches today
+    let appointmentCount = 0
+    if (!appointmentError && approvedAppointments) {
+      appointmentCount = approvedAppointments.filter(apt => {
+        if (apt.approved_option === 'primary') {
+          return apt.primary_date === todayStr
+        } else if (apt.approved_option === 'secondary') {
+          return apt.secondary_date === todayStr
+        }
+        return false
+      }).length
+    }
 
-    // Get this month's appointments
+    // Get this month's appointments (based on created_at)
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
+    startOfMonth.setHours(0, 0, 0, 0)
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    endOfMonth.setHours(23, 59, 59, 999)
 
     const { count: monthlyAppointments, error: monthlyError } = await supabase
       .from('appointments')
       .select('*', { count: 'exact', head: true })
-      .gte('appointment_date', startOfMonth.toISOString())
-      .lte('appointment_date', endOfMonth.toISOString())
+      .gte('created_at', startOfMonth.toISOString())
+      .lte('created_at', endOfMonth.toISOString())
 
     const monthlyCount = monthlyError ? 0 : (monthlyAppointments || 0)
 

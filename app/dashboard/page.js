@@ -14,7 +14,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import UserHeader from '@/components/UserHeader'
 import Footer from '@/components/Footer'
 import UnifiedChatbot from '@/components/UnifiedChatbot'
-import { Calendar, Heart, User, Zap, Baby, Stethoscope, Activity, Eye, Smile, X, Bone, Camera, Brain, Wind, Droplet, Syringe, Pill, FileText, Ear, Sparkles, Microscope } from 'lucide-react'
+import { Calendar, Heart, User, Zap, Baby, Stethoscope, Activity, Eye, Smile, X, Bone, Camera, Brain, Wind, Droplet, Syringe, Pill, FileText, Ear, Sparkles, Microscope, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function UserDashboard() {
   const router = useRouter()
@@ -23,6 +23,27 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedCenter, setSelectedCenter] = useState(null)
   const [selectedBranch, setSelectedBranch] = useState(null)
+
+  // Carousel state
+  const [currentSlide, setCurrentSlide] = useState(0)
+
+  // Auto-play carousel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3)
+    }, 5000) // เปลี่ยนสไลด์ทุก 5 วินาที
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Carousel controls
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % 3)
+  }
+
+  const previousSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + 3) % 3)
+  }
 
   // Medical centers data with full information (no need to fetch from DB)
   const medicalCenters = [
@@ -438,37 +459,148 @@ export default function UserDashboard() {
       <UserHeader />
 
       {/* Main Content */}
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12 max-w-6xl mx-auto space-y-16">
-        {/* Quick Actions - Paolo Style */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">เมนูหลัก</h2>
-          <div className="max-w-sm">
-            <button
-              onClick={() => router.push('/dashboard/book-appointment')}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all hover:-translate-y-1 group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Calendar className="w-9 h-9 text-white" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-bold text-xl mb-1">จองนัดหมาย</h3>
-                  <p className="text-blue-100 text-sm">จองคิวพบแพทย์ล่วงหน้า</p>
-                </div>
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto space-y-12">
+        {/* Hero Carousel */}
+        <div className="relative w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-2xl group">
+          {/* Slides */}
+          <div className="relative w-full h-full">
+            {[1, 2, 3].map((slide, index) => (
+              <div
+                key={slide}
+                className={`absolute inset-0 transition-opacity duration-700 ${
+                  currentSlide === index ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {/* Slide 1 - All You Can Check */}
+                {index === 0 && (
+                  <div className="relative w-full h-full bg-gradient-to-r from-gray-100 to-gray-200">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full md:w-1/2 px-8 md:px-16 z-10">
+                        <h2 className="text-3xl md:text-5xl font-bold text-gray-800 mb-4 leading-tight">
+                          {t('dashboard.allYouCanCheck')}
+                        </h2>
+                        <p className="text-lg md:text-xl text-gray-700 mb-2">
+                          {t('dashboard.customHealthProgram')}
+                        </p>
+                        <ul className="space-y-2 mb-6">
+                          <li className="flex items-center gap-2 text-gray-700">
+                            <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
+                            <span>{t('dashboard.moreThan70Items')}</span>
+                          </li>
+                          <li className="flex items-center gap-2 text-gray-700">
+                            <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
+                            <span>{t('dashboard.specializedEquipment')}</span>
+                          </li>
+                          <li className="flex items-center gap-2 text-gray-700">
+                            <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
+                            <span>{t('dashboard.yearRoundConsultation')}</span>
+                          </li>
+                        </ul>
+                        <div className="mb-6">
+                          <span className="text-sm text-gray-600">{t('dashboard.startingFrom')} </span>
+                          <span className="text-4xl md:text-5xl font-bold text-gray-900">19,500</span>
+                          <span className="text-xl text-gray-600"> {t('dashboard.baht')}</span>
+                        </div>
+                        <button className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-full transition-colors shadow-lg">
+                          {t('dashboard.clickHere')}
+                        </button>
+                      </div>
+                      <div className="hidden md:block absolute right-0 top-0 w-1/2 h-full">
+                        <div className="relative w-full h-full flex items-center justify-end pr-16">
+                          <div className="text-right">
+                            <h3 className="text-5xl font-bold text-gray-800 leading-tight mb-4">
+                              {t('dashboard.check')}<br />{t('dashboard.modify')}<br />{t('dashboard.monitor')}<br />{t('dashboard.continuous')}
+                            </h3>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Slide 2 - Health Check Package */}
+                {index === 1 && (
+                  <div className="relative w-full h-full bg-gradient-to-br from-blue-500 to-blue-700">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center px-8 z-10">
+                        <Heart className="w-24 h-24 text-white mx-auto mb-6" />
+                        <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">
+                          {t('dashboard.annualHealthCheck')}
+                        </h2>
+                        <p className="text-xl md:text-2xl text-blue-100 mb-8">
+                          {t('dashboard.comprehensiveHealthCheck')}
+                        </p>
+                        <button className="px-10 py-4 bg-white text-blue-600 font-bold text-lg rounded-full hover:bg-blue-50 transition-colors shadow-xl">
+                          {t('dashboard.viewDetails')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Slide 3 - Book Now */}
+                {index === 2 && (
+                  <div className="relative w-full h-full bg-gradient-to-br from-green-500 to-green-700">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center px-8 z-10">
+                        <Calendar className="w-24 h-24 text-white mx-auto mb-6" />
+                        <h2 className="text-4xl md:text-6xl font-bold text-white mb-4" dangerouslySetInnerHTML={{ __html: t('dashboard.easyBooking') }} />
+                        <p className="text-xl md:text-2xl text-green-100 mb-8">
+                          {t('dashboard.chooseConvenientTime')}
+                        </p>
+                        <button
+                          onClick={() => router.push('/dashboard/book-appointment')}
+                          className="px-10 py-4 bg-white text-green-600 font-bold text-lg rounded-full hover:bg-green-50 transition-colors shadow-xl"
+                        >
+                          {t('dashboard.bookNow')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </button>
+            ))}
+          </div>
+
+          {/* Navigation Arrows */}
+          <button
+            onClick={previousSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-800" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20"
+          >
+            <ChevronRight className="w-6 h-6 text-gray-800" />
+          </button>
+
+          {/* Dots Indicator */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            {[0, 1, 2].map((index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`h-2 rounded-full transition-all ${
+                  currentSlide === index
+                    ? 'w-8 bg-white'
+                    : 'w-2 bg-white/50 hover:bg-white/75'
+                }`}
+              />
+            ))}
           </div>
         </div>
 
         {/* แพ็กเกจและโปรโมชั่น */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">แพ็กเกจและโปรโมชั่น</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.packagesAndPromotions')}</h2>
             <button
               onClick={() => router.push('/dashboard/packages')}
               className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
             >
-              ดูทั้งหมด →
+              {t('dashboard.viewAll')}
             </button>
           </div>
 
@@ -480,18 +612,18 @@ export default function UserDashboard() {
               </div>
               <div className="p-5">
                 <div className="mb-2">
-                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">แพ็กเกจ 1</span>
+                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">{t('dashboard.package1')}</span>
                 </div>
                 <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                  โปรแกรมตรวจสุขภาพ<br />ประจำปี
+                  {t('dashboard.annualHealthCheckPackage')}
                 </h3>
-                <p className="text-gray-600 text-sm mb-3">ตรวจสุขภาพครอบคลุม เหมาะสำหรับทุกเพศทุกวัย</p>
+                <p className="text-gray-600 text-sm mb-3">{t('dashboard.suitableForAllAges')}</p>
                 <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-2xl font-bold text-gray-900">5,990 ฿</span>
                   <span className="text-sm text-gray-500 line-through">7,500 ฿</span>
                 </div>
                 <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                  เพิ่ม
+                  {t('dashboard.add')}
                 </button>
               </div>
             </div>
@@ -503,18 +635,18 @@ export default function UserDashboard() {
               </div>
               <div className="p-5">
                 <div className="mb-2">
-                  <span className="text-xs font-medium text-pink-600 bg-pink-50 px-2 py-1 rounded">แพ็กเกจ 2</span>
+                  <span className="text-xs font-medium text-pink-600 bg-pink-50 px-2 py-1 rounded">{t('dashboard.package2')}</span>
                 </div>
                 <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                  โปรแกรมตรวจสุขภาพ<br />สำหรับผู้หญิง
+                  {t('dashboard.womensHealthPackage')}
                 </h3>
-                <p className="text-gray-600 text-sm mb-3">ตรวจสุขภาพเฉพาะทางสำหรับผู้หญิง</p>
+                <p className="text-gray-600 text-sm mb-3">{t('dashboard.specializedForWomen')}</p>
                 <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-2xl font-bold text-gray-900">8,500 ฿</span>
                   <span className="text-sm text-gray-500 line-through">11,000 ฿</span>
                 </div>
                 <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                  เพิ่ม
+                  {t('dashboard.add')}
                 </button>
               </div>
             </div>
@@ -526,18 +658,18 @@ export default function UserDashboard() {
               </div>
               <div className="p-5">
                 <div className="mb-2">
-                  <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">แพ็กเกจ 3</span>
+                  <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">{t('dashboard.package3')}</span>
                 </div>
                 <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                  แพ็กเกจตรวจสุขภาพ<br />ผู้สูงอายุ
+                  {t('dashboard.elderlyHealthPackage')}
                 </h3>
-                <p className="text-gray-600 text-sm mb-3">ตรวจสุขภาพครอบคลุมสำหรับผู้สูงอายุ</p>
+                <p className="text-gray-600 text-sm mb-3">{t('dashboard.comprehensiveForElderly')}</p>
                 <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-2xl font-bold text-gray-900">12,900 ฿</span>
                   <span className="text-sm text-gray-500 line-through">15,500 ฿</span>
                 </div>
                 <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                  เพิ่ม
+                  {t('dashboard.add')}
                 </button>
               </div>
             </div>
@@ -547,12 +679,12 @@ export default function UserDashboard() {
         {/* บทความสุขภาพ */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">บทความสุขภาพ</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.healthArticles')}</h2>
             <button
               onClick={() => router.push('/dashboard/articles')}
               className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
             >
-              ดูทั้งหมด →
+              {t('dashboard.viewAll')}
             </button>
           </div>
 
@@ -570,7 +702,7 @@ export default function UserDashboard() {
                   คนโสดสามารถใช้เวลากับตัวเองได้อย่างเต็มที่ สุขภาพ เพราะอาหารการกินควบคุมง่าย...
                 </p>
                 <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  อ่านต่อ →
+                  {t('dashboard.readMore')}
                 </button>
               </div>
             </div>
@@ -588,7 +720,7 @@ export default function UserDashboard() {
                   เมื่อต้องอ ยู่กับการเรียนออนไลน์ ใช้ถือเป็นหมุนหำคู่ที่จะอ…
                 </p>
                 <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  อ่านต่อ →
+                  {t('dashboard.readMore')}
                 </button>
               </div>
             </div>
@@ -606,7 +738,7 @@ export default function UserDashboard() {
                   DNA Circle Premium การตรวจสอบความสุขภาพพรีเมียม แบบระเมียด...
                 </p>
                 <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  อ่านต่อ →
+                  {t('dashboard.readMore')}
                 </button>
               </div>
             </div>
@@ -616,7 +748,7 @@ export default function UserDashboard() {
         {/* ศูนย์และคลินิก */}
         <div>
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">ศูนย์และคลินิก</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.centersAndClinics')}</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
@@ -680,13 +812,13 @@ export default function UserDashboard() {
             <div className="p-8 space-y-8">
               {/* Description */}
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">เกี่ยวกับศูนย์</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.aboutCenter')}</h3>
                 <p className="text-gray-700 leading-relaxed">{selectedCenter.description}</p>
               </div>
 
               {/* Services */}
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">บริการตรวจรักษา</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.treatmentServices')}</h3>
                 <ul className="space-y-2">
                   {selectedCenter.services.map((service, idx) => (
                     <li key={idx} className="flex items-start gap-3">
@@ -706,7 +838,7 @@ export default function UserDashboard() {
                   }}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-colors shadow-lg shadow-blue-200 hover:shadow-xl"
                 >
-                  จองนัดหมายแพทย์
+                  {t('dashboard.bookDoctorAppointment')}
                 </button>
               </div>
             </div>
@@ -719,8 +851,8 @@ export default function UserDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedCenter(null)}>
           <div className="bg-white rounded-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">เลือกสาขา</h2>
-              <p className="text-gray-600 mb-6">กรุณาเลือกสาขาที่ต้องการจองนัดหมาย</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('dashboard.selectBranch')}</h2>
+              <p className="text-gray-600 mb-6">{t('dashboard.selectBranchToBook')}</p>
 
               <div className="space-y-3">
                 {selectedCenter.branches.map((branch, idx) => (
@@ -729,7 +861,7 @@ export default function UserDashboard() {
                     onClick={() => setSelectedBranch(branch)}
                     className="w-full p-4 border-2 border-gray-200 hover:border-blue-500 rounded-xl transition-all hover:shadow-md text-left"
                   >
-                    <div className="font-semibold text-gray-900 text-lg">สาขา{branch}</div>
+                    <div className="font-semibold text-gray-900 text-lg">{t('dashboard.branchPrefix')}{branch}</div>
                     <div className="text-gray-500 text-sm mt-1">{selectedCenter.name}</div>
                   </button>
                 ))}
@@ -739,7 +871,7 @@ export default function UserDashboard() {
                 onClick={() => setSelectedCenter(null)}
                 className="w-full mt-4 py-3 text-gray-600 hover:text-gray-800 font-medium"
               >
-                ยกเลิก
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -782,13 +914,13 @@ export default function UserDashboard() {
             <div className="p-8 space-y-8">
               {/* Description */}
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">เกี่ยวกับศูนย์</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.aboutCenter')}</h3>
                 <p className="text-gray-700 leading-relaxed">{selectedCenter.description}</p>
               </div>
 
               {/* Services */}
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">บริการตรวจรักษา</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.treatmentServices')}</h3>
                 <ul className="space-y-2">
                   {selectedCenter.services.map((service, idx) => (
                     <li key={idx} className="flex items-start gap-3">
@@ -805,7 +937,7 @@ export default function UserDashboard() {
                   onClick={() => { setSelectedBranch(null); }}
                   className="px-6 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl transition-colors"
                 >
-                  เปลี่ยนสาขา
+                  {t('dashboard.changeBranch')}
                 </button>
                 <button
                   onClick={() => {
@@ -815,7 +947,7 @@ export default function UserDashboard() {
                   }}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-colors shadow-lg shadow-blue-200 hover:shadow-xl"
                 >
-                  จองนัดหมายแพทย์
+                  {t('dashboard.bookDoctorAppointment')}
                 </button>
               </div>
             </div>

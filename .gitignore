@@ -54,7 +54,10 @@ Thumbs.db
 # Test files
 nul
 test-gemini.js
-database-payment-test-data.sql
 
-# Documentation
-ADMIN_DEV_GUIDE.md
+# Development/debugging files (root level only)
+/*.sql
+*.csv
+
+# Keep documentation that's still relevant
+# MEDICAL_CENTERS_UPDATE_SUMMARY.md is tracked intentionally

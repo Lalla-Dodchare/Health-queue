@@ -13,17 +13,21 @@ import { getCurrentUser, logout } from '@/lib/auth'
 import { useTranslation } from '@/hooks/useTranslation'
 import SearchDoctor from './SearchDoctor'
 import NotificationDropdown from './NotificationDropdown'
+import { supabase } from '@/lib/supabase'
 import {
   Menu,
   X,
   Calendar,
   FileText,
   User,
-  Settings,
   LogOut,
   ChevronDown,
   Globe,
   Activity,
+  Search,
+  Building2,
+  MapPin,
+  ChevronRight,
 } from 'lucide-react'
 
 export default function UserHeader() {
@@ -33,7 +37,11 @@ export default function UserHeader() {
   const [loading, setLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [branchModalOpen, setBranchModalOpen] = useState(false)
+  const [branches, setBranches] = useState([])
   const profileRef = useRef(null)
+  const branchModalRef = useRef(null)
+
 
   // Load user data
   useEffect(() => {
@@ -47,6 +55,18 @@ export default function UserHeader() {
     loadUser()
   }, [])
 
+  // Load branches
+  useEffect(() => {
+    const loadBranches = async () => {
+      const { data } = await supabase
+        .from('branches')
+        .select('*')
+        .order('name')
+      if (data) setBranches(data)
+    }
+    loadBranches()
+  }, [])
+
   // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -58,6 +78,18 @@ export default function UserHeader() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Close branch modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (branchModalOpen && branchModalRef.current && !branchModalRef.current.contains(event.target)) {
+        setBranchModalOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [branchModalOpen])
 
   // Handle logout
   const handleLogout = async () => {
@@ -108,6 +140,33 @@ export default function UserHeader() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-2 xl:gap-3 flex-shrink-0">
+            {/* Book Appointment Button */}
+            <Link
+              href="/dashboard/book-appointment"
+              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+            >
+              <Calendar className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium text-sm">{t('userHeader.bookAppointment')}</span>
+            </Link>
+
+            {/* Search Doctor Button */}
+            <Link
+              href="/dashboard/doctors"
+              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+            >
+              <Search className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium text-sm">{t('userHeader.searchDoctor')}</span>
+            </Link>
+
+            {/* Select Branch Button */}
+            <button
+              onClick={() => setBranchModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+            >
+              <Building2 className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium text-sm">{t('userHeader.selectBranch')}</span>
+            </button>
+
             {/* Appointments Link */}
             <Link
               href="/dashboard/appointments"
@@ -163,16 +222,7 @@ export default function UserHeader() {
                       onClick={() => setProfileMenuOpen(false)}
                     >
                       <User className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">โปรไฟล์</span>
-                    </Link>
-
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                      <Settings className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">ตั้งค่า</span>
+                      <span className="text-gray-700">{t('userHeader.profile')}</span>
                     </Link>
 
                     <button
@@ -180,7 +230,7 @@ export default function UserHeader() {
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 transition-colors"
                     >
                       <LogOut className="w-5 h-5" />
-                      <span>ออกจากระบบ</span>
+                      <span>{t('userHeader.logout')}</span>
                     </button>
                   </div>
                 </div>
@@ -217,12 +267,41 @@ export default function UserHeader() {
         <div className="lg:hidden border-t border-gray-100 bg-white">
           <div className="px-4 py-3 space-y-2">
             <Link
+              href="/dashboard/book-appointment"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Calendar className="w-5 h-5 text-gray-600" />
+              <span>{t('userHeader.bookAppointment')}</span>
+            </Link>
+
+            <Link
+              href="/dashboard/doctors"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Search className="w-5 h-5 text-gray-600" />
+              <span>{t('userHeader.searchDoctor')}</span>
+            </Link>
+
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false)
+                setBranchModalOpen(true)
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
+            >
+              <Building2 className="w-5 h-5 text-gray-600" />
+              <span>{t('userHeader.selectBranch')}</span>
+            </button>
+
+            <Link
               href="/dashboard/appointments"
               className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
               onClick={() => setMobileMenuOpen(false)}
             >
               <Calendar className="w-5 h-5 text-gray-600" />
-              <span>นัดหมายของฉัน</span>
+              <span>{t('header.appointments')}</span>
             </Link>
 
             <Link
@@ -231,16 +310,7 @@ export default function UserHeader() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <User className="w-5 h-5 text-gray-600" />
-              <span>โปรไฟล์</span>
-            </Link>
-
-            <Link
-              href="/dashboard/settings"
-              className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Settings className="w-5 h-5 text-gray-600" />
-              <span>ตั้งค่า</span>
+              <span>{t('userHeader.profile')}</span>
             </Link>
 
             <button
@@ -248,7 +318,7 @@ export default function UserHeader() {
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
             >
               <Globe className="w-5 h-5 text-gray-600" />
-              <span>{language === 'th' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'}</span>
+              <span>{language === 'th' ? t('userHeader.switchToEnglish') : t('userHeader.switchToThai')}</span>
             </button>
 
             <button
@@ -256,8 +326,84 @@ export default function UserHeader() {
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 rounded-lg"
             >
               <LogOut className="w-5 h-5" />
-              <span>ออกจากระบบ</span>
+              <span>{t('userHeader.logout')}</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Selection Modal */}
+      {branchModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div ref={branchModalRef} className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-green-400 to-green-600 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">{t('userHeader.selectBranchTitle')}</h2>
+                    <p className="text-green-50 text-sm">{t('userHeader.selectBranchDescription')}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBranchModalOpen(false)}
+                  className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {branches.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">{t('userHeader.noBranchesFound')}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {branches.map((branch) => (
+                    <button
+                      key={branch.id}
+                      onClick={() => {
+                        setBranchModalOpen(false)
+                        router.push(`/dashboard/doctors?branch=${branch.id}`)
+                      }}
+                      className="w-full bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 hover:shadow-lg transition-all group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Building2 className="w-7 h-7 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                              {branch.name}
+                            </h3>
+                            {branch.address && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <MapPin className="w-4 h-4" />
+                                <span className="text-sm">{branch.address}</span>
+                              </div>
+                            )}
+                            {branch.phone && (
+                              <p className="text-sm text-gray-500 mt-1">
+                                {t('userHeader.phone')}: {branch.phone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

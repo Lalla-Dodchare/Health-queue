@@ -1,16 +1,36 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { getCurrentUser } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 /**
  * GET /api/notifications
  * Get all notifications for current user
+ * Auth: Uses Authorization header from client
  */
 export async function GET(request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get auth token from request header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+
+    // Create Supabase client with the user's token
+    const token = authHeader.replace('Bearer ', '')
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    })
+
+    // Verify user session
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -57,15 +77,44 @@ export async function GET(request) {
 /**
  * POST /api/notifications
  * Create a new notification (admin/system use)
+ * Auth: Uses Authorization header from client
  */
 export async function POST(request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get auth token from request header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
     }
 
-    const { userId, title, message, type, relatedAppointmentId, relatedPaymentId, actionUrl } = await request.json()
+    // Create Supabase client with the user's token
+    const token = authHeader.replace('Bearer ', '')
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    })
+
+    // Verify user session
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
+    }
+
+    const {
+      userId,
+      title,
+      message,
+      type,
+      relatedAppointmentId,
+      relatedPaymentId,
+      actionUrl,
+      priority,
+      scheduledFor,
+      reminderType
+    } = await request.json()
 
     if (!title || !message) {
       return NextResponse.json(
@@ -74,17 +123,29 @@ export async function POST(request) {
       )
     }
 
+    // Prepare notification data
+    const notificationData = {
+      user_id: userId || user.id,
+      title,
+      message,
+      type: type || 'info',
+      priority: priority || 'normal',
+      related_appointment_id: relatedAppointmentId,
+      related_payment_id: relatedPaymentId,
+      action_url: actionUrl,
+      reminder_type: reminderType
+    }
+
+    // If scheduled for later, set scheduled_for, otherwise set sent_at to now
+    if (scheduledFor) {
+      notificationData.scheduled_for = scheduledFor
+    } else {
+      notificationData.sent_at = new Date().toISOString()
+    }
+
     const { data, error } = await supabase
       .from('notifications')
-      .insert([{
-        user_id: userId || user.id,
-        title,
-        message,
-        type: type || 'info',
-        related_appointment_id: relatedAppointmentId,
-        related_payment_id: relatedPaymentId,
-        action_url: actionUrl
-      }])
+      .insert([notificationData])
       .select()
       .single()
 
@@ -107,12 +168,30 @@ export async function POST(request) {
 /**
  * DELETE /api/notifications
  * Delete all read notifications for current user
+ * Auth: Uses Authorization header from client
  */
 export async function DELETE(request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get auth token from request header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+
+    // Create Supabase client with the user's token
+    const token = authHeader.replace('Bearer ', '')
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    })
+
+    // Verify user session
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
     const { error } = await supabase

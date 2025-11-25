@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/hooks/useTranslation'
 import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -23,20 +23,30 @@ import {
   Stethoscope,
   User,
   AlertCircle,
+  Upload,
+  X,
+  File,
 } from 'lucide-react'
 
 export default function NewBookingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { t, language } = useTranslation()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [step, setStep] = useState(1) // 1: Selection, 2: Dates, 3: Details, 4: Summary
 
+  // Get query parameters
+  const preselectedDoctorId = searchParams.get('doctor')
+  const preselectedBranchId = searchParams.get('branch')
+  const preselectedDepartmentId = searchParams.get('department')
+
   // Selection data
   const [branches, setBranches] = useState([])
   const [departments, setDepartments] = useState([])
   const [doctors, setDoctors] = useState([])
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -53,7 +63,94 @@ export default function NewBookingPage() {
     notes: '',
   })
 
-  // Load user
+  // File upload state
+  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [uploadError, setUploadError] = useState('')
+  const MAX_FILES = 10
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+  const ALLOWED_TYPES = {
+    'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/heic': '.heic'
+  }
+
+  // Load saved form data from localStorage on mount
+  useEffect(() => {
+    const savedFormData = localStorage.getItem('bookingFormData')
+    const savedStep = localStorage.getItem('bookingStep')
+    const savedFileNames = localStorage.getItem('bookingFileNames')
+
+    if (savedFormData) {
+      try {
+        const parsed = JSON.parse(savedFormData)
+        setFormData(parsed)
+        console.log('✅ Loaded saved form data:', parsed)
+      } catch (e) {
+        console.error('Error loading saved form data:', e)
+      }
+    } else {
+      // Reset form if no saved data
+      setFormData({
+        branchId: '',
+        departmentId: '',
+        doctorId: '',
+        primaryDate: '',
+        primaryTime: '',
+        primaryFlexible: false,
+        secondaryDate: '',
+        secondaryTime: '',
+        secondaryFlexible: false,
+        symptoms: '',
+        notes: '',
+      })
+    }
+
+    if (savedStep) {
+      setStep(parseInt(savedStep))
+    } else {
+      setStep(1)
+    }
+
+    // Note: ไฟล์จริงๆเก็บไม่ได้ใน localStorage (เป็น File object)
+    // เราเก็บเฉพาะชื่อไฟล์เพื่อแสดงให้เห็นว่าเคยเลือกอะไรไว้
+    // แต่ผู้ใช้ต้องเลือกไฟล์ใหม่ถ้า refresh หน้า
+    if (savedFileNames) {
+      console.log('📎 คุณเคยเลือกไฟล์ไว้:', JSON.parse(savedFileNames))
+      console.log('⚠️ กรุณาเลือกไฟล์ใหม่อีกครั้ง (ไฟล์จริงไม่สามารถเก็บใน localStorage ได้)')
+    }
+  }, [])
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (formData.branchId || formData.symptoms || formData.notes) {
+      localStorage.setItem('bookingFormData', JSON.stringify(formData))
+    }
+  }, [formData])
+
+  // Save current step to localStorage
+  useEffect(() => {
+    localStorage.setItem('bookingStep', step.toString())
+  }, [step])
+
+  // Save file names to localStorage when files change
+  useEffect(() => {
+    if (uploadedFiles.length > 0) {
+      const fileMetadata = uploadedFiles.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type
+      }))
+      localStorage.setItem('bookingFileNames', JSON.stringify(fileMetadata))
+      console.log('💾 Saved file metadata to localStorage:', fileMetadata)
+    } else {
+      localStorage.removeItem('bookingFileNames')
+    }
+  }, [uploadedFiles])
+
+  // Load user with profile data
   useEffect(() => {
     const loadUser = async () => {
       const currentUser = await getCurrentUser()
@@ -61,7 +158,23 @@ export default function NewBookingPage() {
         router.push('/login')
         return
       }
-      setUser(currentUser)
+
+      // Fetch complete profile data
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single()
+
+      if (!error && profile) {
+        setUser({
+          ...currentUser,
+          ...profile
+        })
+      } else {
+        setUser(currentUser)
+      }
+
       setLoading(false)
     }
     loadUser()
@@ -77,16 +190,18 @@ export default function NewBookingPage() {
 
       if (!error && data) {
         setBranches(data)
+        setDataLoaded(true)
+        console.log('✅ Loaded branches:', data.length)
       }
     }
     loadBranches()
   }, [])
 
-  // Load departments when branch selected
+  // Load departments when branch selected OR when data becomes available
   useEffect(() => {
     const loadDepartments = async () => {
-      if (!formData.branchId) {
-        setDepartments([])
+      if (!formData.branchId || !dataLoaded) {
+        if (!formData.branchId) setDepartments([])
         return
       }
 
@@ -113,7 +228,7 @@ export default function NewBookingPage() {
       }
     }
     loadDepartments()
-  }, [formData.branchId])
+  }, [formData.branchId, dataLoaded])
 
   // Load doctors when department selected
   useEffect(() => {
@@ -125,7 +240,7 @@ export default function NewBookingPage() {
 
       const { data, error } = await supabase
         .from('doctors')
-        .select('*')
+        .select('id, contact_name, specialty, department_id, branch_id, status')
         .eq('department_id', formData.departmentId)
         .eq('branch_id', formData.branchId)
         .eq('status', 'active')
@@ -133,14 +248,101 @@ export default function NewBookingPage() {
 
       if (!error && data) {
         setDoctors(data)
+      } else if (error) {
+        console.error('Error loading doctors:', error)
       }
     }
     loadDoctors()
   }, [formData.departmentId])
 
+  // Handle preselected doctor from query parameters
+  useEffect(() => {
+    if (preselectedDoctorId && preselectedBranchId && preselectedDepartmentId && dataLoaded) {
+      console.log('🎯 Preselected doctor detected:', {
+        doctor: preselectedDoctorId,
+        branch: preselectedBranchId,
+        department: preselectedDepartmentId
+      })
+
+      // Set form data
+      setFormData(prev => ({
+        ...prev,
+        doctorId: preselectedDoctorId,
+        branchId: preselectedBranchId,
+        departmentId: preselectedDepartmentId
+      }))
+
+      // Skip to Step 2 (Dates)
+      setStep(2)
+
+      // Clear localStorage saved step
+      localStorage.setItem('bookingStep', '2')
+    }
+  }, [preselectedDoctorId, preselectedBranchId, preselectedDepartmentId, dataLoaded])
+
   // Handle form changes
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Handle file upload
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files)
+    setUploadError('')
+
+    // เช็คจำนวนไฟล์
+    if (uploadedFiles.length + files.length > MAX_FILES) {
+      setUploadError(language === 'th'
+        ? `สามารถอัพโหลดได้สูงสุด ${MAX_FILES} ไฟล์`
+        : `Maximum ${MAX_FILES} files allowed`)
+      return
+    }
+
+    // เช็คแต่ละไฟล์
+    const validFiles = []
+    for (const file of files) {
+      // เช็คประเภทไฟล์
+      if (!Object.keys(ALLOWED_TYPES).includes(file.type)) {
+        setUploadError(language === 'th'
+          ? `ไฟล์ ${file.name} ไม่ได้รับอนุญาต (รองรับเฉพาะ PDF, DOC, DOCX, JPG, PNG, HEIC)`
+          : `File ${file.name} not allowed (Only PDF, DOC, DOCX, JPG, PNG, HEIC)`)
+        continue
+      }
+
+      // เช็คขนาดไฟล์
+      if (file.size > MAX_FILE_SIZE) {
+        setUploadError(language === 'th'
+          ? `ไฟล์ ${file.name} ใหญ่เกินไป (สูงสุด 10MB)`
+          : `File ${file.name} too large (Max 10MB)`)
+        continue
+      }
+
+      validFiles.push(file)
+    }
+
+    if (validFiles.length > 0) {
+      setUploadedFiles([...uploadedFiles, ...validFiles])
+    }
+
+    // Reset input
+    e.target.value = ''
+  }
+
+  // Remove file
+  const removeFile = (index) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index))
+    setUploadError('')
+  }
+
+  // Get file icon
+  const getFileIcon = (file) => {
+    if (file.type.startsWith('image/')) {
+      return '🖼️'
+    } else if (file.type.includes('pdf')) {
+      return '📄'
+    } else {
+      return '📝'
+    }
   }
 
   // Validate step
@@ -162,10 +364,58 @@ export default function NewBookingPage() {
     return true
   }
 
+  // Upload files to Supabase Storage
+  const uploadFilesToStorage = async (appointmentId) => {
+    if (uploadedFiles.length === 0) return []
+
+    const uploadedUrls = []
+
+    for (const file of uploadedFiles) {
+      try {
+        // สร้างชื่อไฟล์แบบ unique
+        const timestamp = Date.now()
+        const randomString = Math.random().toString(36).substring(7)
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${user.id}/${appointmentId}/${timestamp}_${randomString}.${fileExt}`
+
+        // อัพโหลดไปยัง Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('medical-documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (error) {
+          console.error('Error uploading file:', file.name, error)
+          continue
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('medical-documents')
+          .getPublicUrl(fileName)
+
+        uploadedUrls.push({
+          file_name: file.name,
+          file_path: fileName,
+          file_url: publicUrl,
+          file_type: file.type,
+          file_size: file.size
+        })
+      } catch (err) {
+        console.error('Error uploading file:', file.name, err)
+      }
+    }
+
+    return uploadedUrls
+  }
+
   // Submit booking
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
+      // 1. สร้าง appointment ก่อน
       const { data, error} = await supabase
         .from('appointments')
         .insert({
@@ -185,8 +435,40 @@ export default function NewBookingPage() {
           // Removed service_type temporarily to debug constraint issue
         })
         .select()
+        .single()
 
       if (error) throw error
+
+      // 2. อัพโหลดไฟล์ (ถ้ามี)
+      if (uploadedFiles.length > 0) {
+        const fileData = await uploadFilesToStorage(data.id)
+
+        // 3. บันทึกข้อมูลไฟล์ลงฐานข้อมูล
+        if (fileData.length > 0) {
+          const { error: fileError } = await supabase
+            .from('appointment_files')
+            .insert(
+              fileData.map(file => ({
+                appointment_id: data.id,
+                file_name: file.file_name,
+                file_path: file.file_path,
+                file_url: file.file_url,
+                file_type: file.file_type,
+                file_size: file.file_size,
+              }))
+            )
+
+          if (fileError) {
+            console.error('Error saving file data:', fileError)
+          }
+        }
+      }
+
+      // Clear localStorage after successful booking
+      localStorage.removeItem('bookingFormData')
+      localStorage.removeItem('bookingStep')
+      localStorage.removeItem('bookingFileNames')
+      console.log('🗑️ Cleared all localStorage data')
 
       // Success - redirect to appointments
       router.push('/dashboard/appointments?success=true')
@@ -411,17 +693,6 @@ export default function NewBookingPage() {
                     required
                   />
                 </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.primaryFlexible}
-                    onChange={(e) => updateFormData('primaryFlexible', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  {language === 'th'
-                    ? 'ยืดหยุ่นเวลา (ยอมรับเวลาใกล้เคียง ±1 ชั่วโมง)'
-                    : 'Flexible time (Accept nearby time ±1 hour)'}
-                </label>
               </div>
 
               {/* Secondary Date */}
@@ -446,17 +717,6 @@ export default function NewBookingPage() {
                     required
                   />
                 </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.secondaryFlexible}
-                    onChange={(e) => updateFormData('secondaryFlexible', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  {language === 'th'
-                    ? 'ยืดหยุ่นเวลา (ยอมรับเวลาใกล้เคียง ±1 ชั่วโมง)'
-                    : 'Flexible time (Accept nearby time ±1 hour)'}
-                </label>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
@@ -515,6 +775,87 @@ export default function NewBookingPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors resize-none"
                 />
               </div>
+
+              {/* File Upload */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Upload className="w-5 h-5 text-blue-500" />
+                  {language === 'th' ? 'แนบไฟล์เอกสารเพิ่มเติม (ถ้ามี)' : 'Attach Medical Documents (Optional)'}
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  {language === 'th'
+                    ? `รองรับไฟล์: PDF, DOC, DOCX, JPG, PNG, HEIC (สูงสุด ${MAX_FILES} ไฟล์, ขนาดไม่เกิน 10MB ต่อไฟล์)`
+                    : `Supported: PDF, DOC, DOCX, JPG, PNG, HEIC (Max ${MAX_FILES} files, 10MB per file)`}
+                </p>
+
+                {/* Upload Button */}
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                  disabled={uploadedFiles.length >= MAX_FILES}
+                />
+                <label
+                  htmlFor="file-upload"
+                  className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${
+                    uploadedFiles.length >= MAX_FILES
+                      ? 'border-gray-200 bg-gray-50 cursor-not-allowed text-gray-400'
+                      : 'border-blue-300 hover:border-blue-500 hover:bg-blue-50 text-blue-600'
+                  }`}
+                >
+                  <Upload className="w-5 h-5" />
+                  <span className="font-medium">
+                    {language === 'th'
+                      ? `เลือกไฟล์ (${uploadedFiles.length}/${MAX_FILES})`
+                      : `Choose Files (${uploadedFiles.length}/${MAX_FILES})`}
+                  </span>
+                </label>
+
+                {/* Error Message */}
+                {uploadError && (
+                  <div className="mt-2 flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
+
+                {/* File List */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium text-gray-700">
+                      {language === 'th' ? 'ไฟล์ที่เลือก:' : 'Selected Files:'}
+                    </p>
+                    {uploadedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="text-2xl flex-shrink-0">{getFileIcon(file)}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="flex-shrink-0 p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title={language === 'th' ? 'ลบไฟล์' : 'Remove file'}
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -526,6 +867,58 @@ export default function NewBookingPage() {
               </h2>
 
               <div className="space-y-4">
+                {/* Patient Info Summary */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-900 mb-3">
+                    {language === 'th' ? 'ข้อมูลผู้จอง' : 'Patient Information'}
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <p className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-blue-600" />
+                      <span className="text-blue-700">{language === 'th' ? 'ชื่อ-นามสกุล:' : 'Full Name:'}</span>
+                      <span className="font-medium text-blue-900">{user?.full_name}</span>
+                    </p>
+                    {user?.date_of_birth && (
+                      <p className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <span className="text-blue-700">{language === 'th' ? 'วันเกิด:' : 'Date of Birth:'}</span>
+                        <span className="font-medium text-blue-900">
+                          {new Date(user.date_of_birth).toLocaleDateString('th-TH', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </p>
+                    )}
+                    {user?.phone && (
+                      <p className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span className="text-blue-700">{language === 'th' ? 'เบอร์โทรศัพท์:' : 'Phone:'}</span>
+                        <span className="font-medium text-blue-900">{user.phone}</span>
+                      </p>
+                    )}
+                    <div className="mt-2 pt-2 border-t border-blue-200">
+                      <p className="flex items-start gap-2">
+                        <AlertCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${user?.allergies ? 'text-red-600' : 'text-gray-400'}`} />
+                        <div className="flex-1">
+                          <span className="text-blue-700">{language === 'th' ? 'ประวัติการแพ้:' : 'Allergies:'}</span>
+                          <p className={`font-medium mt-1 ${user?.allergies ? 'text-red-700' : 'text-gray-500'}`}>
+                            {user?.allergies || (language === 'th' ? 'ผู้ใช้ไม่ได้ระบุ' : 'Not specified')}
+                          </p>
+                        </div>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-xs text-blue-700">
+                      {language === 'th'
+                        ? '⚠️ กรุณาตรวจสอบข้อมูลให้ถูกต้อง'
+                        : '⚠️ Please verify your information'}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Selection Summary */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">
@@ -607,6 +1000,33 @@ export default function NewBookingPage() {
                       {language === 'th' ? 'หมายเหตุ' : 'Notes'}
                     </h3>
                     <p className="text-sm text-gray-700 whitespace-pre-wrap">{formData.notes}</p>
+                  </div>
+                )}
+
+                {/* Files Summary */}
+                {uploadedFiles.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3">
+                      {language === 'th' ? 'ไฟล์ที่แนบ' : 'Attached Files'} ({uploadedFiles.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded"
+                        >
+                          <span className="text-xl">{getFileIcon(file)}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

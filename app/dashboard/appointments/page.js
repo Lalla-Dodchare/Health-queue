@@ -24,6 +24,8 @@ import {
   ChevronRight,
   Filter,
   Search,
+  FileText,
+  Download,
 } from 'lucide-react'
 import { getDisplayDateTime, formatAppointmentDateTime } from '@/utils/appointmentHelpers'
 
@@ -89,6 +91,9 @@ export default function MyAppointmentsPage() {
           status,
           notes,
           created_at,
+          treatment_note,
+          treatment_file_url,
+          treatment_completed_at,
           doctors!appointments_doctor_id_fkey (
             id,
             contact_name,
@@ -110,7 +115,7 @@ export default function MyAppointmentsPage() {
 
       if (error) throw error
 
-      console.log('✅ Loaded appointments:', data)
+      // Removed verbose console.log to keep console clean
       setAppointments(data || [])
     } catch (error) {
       console.error('❌ Error loading appointments:', error)
@@ -130,12 +135,12 @@ export default function MyAppointmentsPage() {
     if (activeTab === 'upcoming') {
       filtered = filtered.filter((apt) => {
         const displayDateTime = getDisplayDateTime(apt)
-        return displayDateTime && displayDateTime.date >= today && apt.status !== 'cancelled' && apt.status !== 'rejected'
+        return displayDateTime && displayDateTime.date >= today && apt.status !== 'cancelled' && apt.status !== 'rejected' && apt.status !== 'completed'
       })
     } else if (activeTab === 'past') {
       filtered = filtered.filter((apt) => {
         const displayDateTime = getDisplayDateTime(apt)
-        return displayDateTime && displayDateTime.date < today && apt.status !== 'cancelled' && apt.status !== 'rejected'
+        return (displayDateTime && displayDateTime.date < today && apt.status !== 'cancelled' && apt.status !== 'rejected') || apt.status === 'completed'
       })
     } else if (activeTab === 'cancelled') {
       // Include both cancelled (by user) and rejected (by admin)
@@ -356,6 +361,61 @@ export default function MyAppointmentsPage() {
                         <p className="text-sm text-gray-500 mt-3">
                           {t('appointments.notes')}: {appointment.notes}
                         </p>
+                      )}
+
+                      {/* Treatment Results */}
+                      {appointment.status === 'completed' && appointment.treatment_note && (
+                        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            ผลการรักษา
+                          </h4>
+                          <p className="text-sm text-green-800 whitespace-pre-wrap mb-3">{appointment.treatment_note}</p>
+                          {appointment.treatment_file_url && (() => {
+                            try {
+                              const fileUrls = JSON.parse(appointment.treatment_file_url)
+                              return Array.isArray(fileUrls) ? (
+                                <div className="space-y-2">
+                                  <p className="text-xs text-green-700 font-semibold">ไฟล์ผลการรักษา ({fileUrls.length}):</p>
+                                  {fileUrls.map((url, index) => (
+                                    <a
+                                      key={index}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 hover:underline"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                      ดาวน์โหลดไฟล์ที่ {index + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <a
+                                  href={appointment.treatment_file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 hover:underline"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  ดาวน์โหลดไฟล์ผลการรักษา
+                                </a>
+                              )
+                            } catch {
+                              return (
+                                <a
+                                  href={appointment.treatment_file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-sm text-green-600 hover:text-green-800 hover:underline"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  ดาวน์โหลดไฟล์ผลการรักษา
+                                </a>
+                              )
+                            }
+                          })()}
+                        </div>
                       )}
                     </div>
 

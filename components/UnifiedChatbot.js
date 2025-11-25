@@ -14,17 +14,25 @@ import { supabase } from '@/lib/supabase'
 import { useTranslation } from '@/hooks/useTranslation'
 import { MessageSquare, Send, X, Minimize2, Maximize2, Bot, User as UserIcon, Shield } from 'lucide-react'
 
-export default function UnifiedChatbot({ userId, userRole = 'user' }) {
+export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode = 'ai', autoOpen = false }) {
   const { t, language } = useTranslation()
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(autoOpen)
   const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState('ai') // 'ai' or 'admin'
+  const [mode, setMode] = useState(defaultMode) // 'ai' or 'admin'
   const [unreadCount, setUnreadCount] = useState(0)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Auto open and set mode when props change
+  useEffect(() => {
+    if (autoOpen) {
+      setIsOpen(true)
+      setMode(defaultMode)
+    }
+  }, [autoOpen, defaultMode])
 
   // Auto scroll to bottom
   useEffect(() => {

@@ -5,13 +5,19 @@
  */
 
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import {
   sendAppointmentApprovedEmail,
   sendAppointmentRejectedEmail,
   formatEmailDate,
   formatEmailTime
 } from '@/lib/email/emailService'
+
+// Use service role key to bypass RLS and access all data
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
 
 export async function POST(request) {
   try {
@@ -38,6 +44,7 @@ export async function POST(request) {
       .from('appointments')
       .select(`
         id,
+        user_id,
         primary_date,
         primary_time,
         secondary_date,
@@ -47,25 +54,9 @@ export async function POST(request) {
         secondary_flexible,
         symptoms,
         status,
-        profiles!appointments_user_id_fkey (
-          id,
-          email,
-          full_name
-        ),
-        doctors!appointments_doctor_id_fkey (
-          id,
-          contact_name,
-          contact_email,
-          specialty
-        ),
-        departments!appointments_department_id_fkey (
-          id,
-          name
-        ),
-        branches!appointments_branch_id_fkey (
-          id,
-          name
-        )
+        doctor_id,
+        department_id,
+        branch_id
       `)
       .eq('id', appointmentId)
       .single()
@@ -77,6 +68,37 @@ export async function POST(request) {
         { status: 404 }
       )
     }
+
+    // Fetch related data separately
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, email, full_name')
+      .eq('id', appointment.user_id)
+      .single()
+
+    const { data: doctor } = await supabase
+      .from('doctors')
+      .select('id, contact_name, contact_email, specialty')
+      .eq('id', appointment.doctor_id)
+      .single()
+
+    const { data: department } = await supabase
+      .from('departments')
+      .select('id, name')
+      .eq('id', appointment.department_id)
+      .single()
+
+    const { data: branch } = await supabase
+      .from('branches')
+      .select('id, name')
+      .eq('id', appointment.branch_id)
+      .single()
+
+    // Reconstruct appointment object
+    appointment.profiles = profile
+    appointment.doctors = doctor
+    appointment.departments = department
+    appointment.branches = branch
 
     // Determine language (default to Thai)
     const language = 'th' // Can be enhanced to check user preferences

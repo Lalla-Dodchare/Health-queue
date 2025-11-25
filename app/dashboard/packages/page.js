@@ -21,6 +21,8 @@ export default function PackagesPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [openAdminChat, setOpenAdminChat] = useState(false)
+  const [favorites, setFavorites] = useState([])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +44,34 @@ export default function PackagesPage() {
 
     checkAuth()
   }, [router])
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('packageFavorites')
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites))
+    }
+  }, [])
+
+  // Save favorites to localStorage whenever it changes
+  useEffect(() => {
+    if (favorites.length > 0 || favorites.length === 0) {
+      localStorage.setItem('packageFavorites', JSON.stringify(favorites))
+    }
+  }, [favorites])
+
+  // Toggle favorite
+  const toggleFavorite = (packageId) => {
+    setFavorites(prev => {
+      if (prev.includes(packageId)) {
+        // Remove from favorites
+        return prev.filter(id => id !== packageId)
+      } else {
+        // Add to favorites
+        return [...prev, packageId]
+      }
+    })
+  }
 
   // Mock packages data (in real app, fetch from database)
   const packages = [
@@ -227,6 +257,16 @@ export default function PackagesPage() {
     return matchesCategory && matchesSearch
   })
 
+  // Sort packages: favorites first, then by original order
+  const sortedPackages = [...filteredPackages].sort((a, b) => {
+    const aIsFavorite = favorites.includes(a.id)
+    const bIsFavorite = favorites.includes(b.id)
+
+    if (aIsFavorite && !bIsFavorite) return -1
+    if (!aIsFavorite && bIsFavorite) return 1
+    return 0
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -291,12 +331,17 @@ export default function PackagesPage() {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            พบ <span className="font-semibold text-gray-900">{filteredPackages.length}</span> แพ็กเกจ
+            พบ <span className="font-semibold text-gray-900">{sortedPackages.length}</span> แพ็กเกจ
+            {favorites.length > 0 && (
+              <span className="ml-2 text-red-500">
+                (❤️ {favorites.length} รายการโปรด)
+              </span>
+            )}
           </p>
         </div>
 
         {/* Packages Grid */}
-        {filteredPackages.length === 0 ? (
+        {sortedPackages.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
               <Search className="w-12 h-12 text-gray-300" />
@@ -306,21 +351,32 @@ export default function PackagesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {filteredPackages.map((pkg) => {
+            {sortedPackages.map((pkg) => {
               const IconComponent = pkg.icon
               const colorClasses = getColorClasses(pkg.color)
+              const isFavorite = favorites.includes(pkg.id)
 
               return (
                 <div
                   key={pkg.id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all"
                 >
                   {/* Package Image/Icon */}
                   <div className={`relative h-52 bg-gradient-to-br ${colorClasses.bg} flex items-center justify-center`}>
                     <IconComponent className={`w-24 h-24 ${colorClasses.icon}`} />
-                    <div className="absolute top-4 right-4 bg-white rounded-full p-2 hover:scale-110 transition-transform">
-                      <Heart className="w-5 h-5 text-gray-400 hover:text-red-500 transition-colors" />
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleFavorite(pkg.id)
+                      }}
+                      className="absolute top-4 right-4 bg-white rounded-full p-2 hover:scale-110 transition-transform shadow-md"
+                    >
+                      <Heart
+                        className={`w-5 h-5 transition-colors ${
+                          isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-500'
+                        }`}
+                      />
+                    </button>
                   </div>
 
                   {/* Package Details */}
@@ -378,7 +434,10 @@ export default function PackagesPage() {
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-center text-white">
           <h2 className="text-2xl font-bold mb-2">ไม่แน่ใจว่าควรเลือกแพ็กเกจไหน?</h2>
           <p className="mb-6 text-blue-100">ปรึกษาทีมแพทย์ผู้เชี่ยวชาญของเราเพื่อคำแนะนำที่เหมาะกับคุณ</p>
-          <button className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors">
+          <button
+            onClick={() => setOpenAdminChat(true)}
+            className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors"
+          >
             ติดต่อปรึกษา
           </button>
         </div>
@@ -388,7 +447,12 @@ export default function PackagesPage() {
       <Footer />
 
       {/* Chatbot */}
-      <UnifiedChatbot userId={user?.id} userRole="user" />
+      <UnifiedChatbot
+        userId={user?.id}
+        userRole="user"
+        defaultMode={openAdminChat ? 'admin' : 'ai'}
+        autoOpen={openAdminChat}
+      />
     </div>
   )
 }

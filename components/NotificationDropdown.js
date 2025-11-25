@@ -17,6 +17,7 @@ export default function NotificationDropdown({ userId }) {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [isMarkingRead, setIsMarkingRead] = useState(false)
   const dropdownRef = useRef(null)
 
   // Close dropdown when clicking outside
@@ -37,10 +38,26 @@ export default function NotificationDropdown({ userId }) {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/notifications?limit=20')
+      // Get auth token from Supabase
+      const { supabase } = await import('@/lib/supabase')
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('No session found')
+        return
+      }
+
+      const res = await fetch(`/api/notifications?limit=20&_t=${Date.now()}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Cache-Control': 'no-cache'
+        }
+      })
+
       const data = await res.json()
 
       if (data.success) {
+        console.log(`📬 Fetched ${data.notifications?.length || 0} notifications, ${data.unreadCount || 0} unread`)
         setNotifications(data.notifications || [])
         setUnreadCount(data.unreadCount || 0)
       }
@@ -66,58 +83,133 @@ export default function NotificationDropdown({ userId }) {
 
   // Mark notification as read
   const markAsRead = async (notificationId) => {
+    // Prevent marking while already in progress
+    if (isMarkingRead) {
+      console.log('Already marking notifications, please wait')
+      return
+    }
+
+    setIsMarkingRead(true)
     try {
+      // Get auth token from Supabase
+      const { supabase } = await import('@/lib/supabase')
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('No session found')
+        return
+      }
+
       const res = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'PATCH'
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
-      if (res.ok) {
-        // Update local state
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+      }
+
+      const data = await res.json()
+
+      if (data.success) {
+        console.log('Notification marked as read successfully')
+        // Update local state immediately
         setNotifications(prev =>
           prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
         )
         setUnreadCount(prev => Math.max(0, prev - 1))
+      } else {
+        console.error('Failed to mark notification as read:', data.error)
       }
     } catch (error) {
       console.error('Error marking notification as read:', error)
+      alert(t('notif.markReadError') || 'Failed to mark notification as read')
+    } finally {
+      setIsMarkingRead(false)
     }
   }
 
   // Mark all as read
   const markAllAsRead = async () => {
+    // Prevent multiple simultaneous requests
+    if (isMarkingRead) {
+      console.log('Already marking notifications, please wait')
+      return
+    }
+
+    // Don't proceed if there are no unread notifications
+    if (unreadCount === 0) {
+      console.log('No unread notifications to mark')
+      return
+    }
+
+    setIsMarkingRead(true)
     try {
+      // Get auth token from Supabase
+      const { supabase } = await import('@/lib/supabase')
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('No session found')
+        return
+      }
+
+      console.log('Marking all notifications as read...')
       const res = await fetch('/api/notifications/mark-all-read', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
-      if (res.ok) {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+      }
+
+      const data = await res.json()
+
+      if (data.success) {
+        console.log('All notifications marked as read successfully')
+        // Update local state immediately - mark all as read
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
         setUnreadCount(0)
+      } else {
+        console.error('Failed to mark all as read:', data.error)
       }
     } catch (error) {
       console.error('Error marking all as read:', error)
+      alert(t('notif.markAllReadError') || 'Failed to mark all notifications as read')
+    } finally {
+      setIsMarkingRead(false)
     }
   }
 
   // Handle notification click
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification.id)
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if unread (don't wait)
+    if (!notification.is_read) {
+      markAsRead(notification.id)
+    }
+
+    // Always navigate immediately
+    setIsOpen(false)
 
     // Navigate to action URL if provided
     if (notification.action_url) {
       router.push(notification.action_url)
-      setIsOpen(false)
       return
     }
 
     // Fallback: Navigate based on notification type
-    if (notification.type === 'appointment' && notification.related_appointment_id) {
-      router.push(`/dashboard/appointments`)
+    if (notification.type === 'appointment' || notification.related_appointment_id) {
+      router.push('/dashboard/appointments')
     } else if (notification.type === 'payment' && notification.related_payment_id) {
-      router.push(`/dashboard/appointments`)
+      router.push('/dashboard/appointments')
     }
-
-    setIsOpen(false)
   }
 
   // Get icon based on notification type
@@ -150,7 +242,7 @@ export default function NotificationDropdown({ userId }) {
     const diffDays = Math.floor(diffMs / 86400000)
 
     if (diffMins < 1) return t('common.justNow') || 'Just now'
-    if (diffMins < 60) return `${diffMins} ${t('common.minsAgo') || 'mins ago'}`
+    if (diffMins < 60) return `${diffMins} ${t('common.minutesAgo') || 'mins ago'}`
     if (diffHours < 24) return `${diffHours} ${t('common.hoursAgo') || 'hours ago'}`
     if (diffDays < 7) return `${diffDays} ${t('common.daysAgo') || 'days ago'}`
     return date.toLocaleDateString()
@@ -182,16 +274,40 @@ export default function NotificationDropdown({ userId }) {
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                disabled={isMarkingRead}
+                className={`text-sm font-medium flex items-center gap-1 transition-colors ${
+                  isMarkingRead
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-blue-600 hover:text-blue-700'
+                }`}
               >
-                <Check className="w-4 h-4" />
-                {t('notif.markAllRead')}
+                {isMarkingRead ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                    {t('notif.marking') || 'Marking...'}
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    {t('notif.markAllRead')}
+                  </>
+                )}
               </button>
             )}
           </div>
 
           {/* Notifications List */}
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 relative">
+            {/* Overlay when marking as read */}
+            {isMarkingRead && (
+              <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
+                <div className="bg-white rounded-lg shadow-lg p-4 flex items-center gap-3">
+                  <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                  <span className="text-sm text-gray-700">{t('notif.updating') || 'Updating...'}</span>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="p-8 text-center">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
@@ -208,7 +324,7 @@ export default function NotificationDropdown({ userId }) {
                   onClick={() => handleNotificationClick(notification)}
                   className={`p-4 border-b border-gray-50 hover:bg-blue-50 cursor-pointer transition-colors ${
                     !notification.is_read ? 'bg-blue-50/50' : ''
-                  }`}
+                  } ${isMarkingRead ? 'pointer-events-none' : ''}`}
                 >
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 mt-1">

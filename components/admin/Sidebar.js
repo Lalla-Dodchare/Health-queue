@@ -6,10 +6,6 @@ import {
   Users,
   Stethoscope,
   Building2,
-  BarChart3,
-  Star,
-  Bell,
-  TrendingUp,
   MessageCircle,
   Settings,
   LogOut,
@@ -39,29 +35,9 @@ const navigation = [
     icon: Stethoscope,
   },
   {
-    name: 'ระบบบริหารกิจ',
+    name: 'จัดการแผนก/สาขา',
     href: '/admin/departments',
     icon: Building2,
-  },
-  {
-    name: 'รายงานการใช้งาน',
-    href: '/admin/reports',
-    icon: BarChart3,
-  },
-  {
-    name: 'ปักหมุดแนะนำ',
-    href: '/admin/hot-service',
-    icon: Star,
-  },
-  {
-    name: 'ระบบแจ้งเตือนอัตโนมัติ',
-    href: '/admin/notifications',
-    icon: Bell,
-  },
-  {
-    name: 'สถิติการเข้าถึง',
-    href: '/admin/statistics',
-    icon: TrendingUp,
   },
   {
     name: 'ตอบคำถาม/แชท',

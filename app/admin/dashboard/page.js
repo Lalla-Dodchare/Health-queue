@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import AdminSidebar from '@/components/admin/Sidebar'
-import { Users, Calendar, Stethoscope, Settings, BarChart } from 'lucide-react'
+import { Users, Calendar, Stethoscope, Settings, BarChart as BarChartIcon } from 'lucide-react'
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -15,6 +16,13 @@ export default function AdminDashboard() {
     doctors: 0,
     appointmentsToday: 0,
     appointmentsThisMonth: 0,
+  })
+  const [chartData, setChartData] = useState({
+    daily: [],
+    branches: [],
+    departments: [],
+    successRate: { rate: 0, approved: 0, total: 0 },
+    cancellationRate: { rate: 0, cancelled: 0, total: 0 }
   })
 
   useEffect(() => {
@@ -60,6 +68,26 @@ export default function AdminDashboard() {
 
     if (user) {
       fetchStats()
+    }
+  }, [user])
+
+  // Fetch chart data from API
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const response = await fetch('/api/chart-data')
+        const result = await response.json()
+
+        if (result.success) {
+          setChartData(result.data)
+        }
+      } catch (error) {
+        console.error('Error fetching chart data:', error)
+      }
+    }
+
+    if (user) {
+      fetchChartData()
     }
   }, [user])
 
@@ -110,84 +138,97 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">สถิติเดือนนี้</h3>
-              <BarChart className="w-8 h-8 text-orange-500" />
+              <BarChartIcon className="w-8 h-8 text-orange-500" />
             </div>
             <p className="text-3xl font-bold text-gray-900">{stats.appointmentsThisMonth}</p>
           </div>
         </div>
 
-        {/* Management Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900">จัดการผู้ใช้งาน</h3>
+        {/* Charts Section */}
+        <div className="space-y-8">
+          {/* Daily Appointments Bar Chart with Status Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Daily Bar Chart - Takes 2 columns */}
+            <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">จำนวนนัดหมายตามวัน (30 วันล่าสุด)</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData.daily} barSize={40} barGap={8}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#3b82f6" name="จำนวนนัดหมาย" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <p className="text-sm text-gray-600">
-              เพิ่ม แก้ไข หรือลบข้อมูลผู้ใช้งาน
-            </p>
+
+            {/* Status Distribution Pie Chart - Takes 1 column */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">สถานะการนัดหมาย</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'จอง: ' + chartData.successRate.rate + '%', value: chartData.successRate.approved },
+                      { name: 'หยกเลิก: ' + chartData.cancellationRate.rate + '%', value: chartData.cancellationRate.cancelled }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}`}
+                    outerRadius={100}
+                    dataKey="value"
+                  >
+                    <Cell fill="#3b82f6" />
+                    <Cell fill="#10b981" />
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Stethoscope className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900">จัดการแพทย์</h3>
+          {/* Grid for Pie Chart and Department Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Branch Pie Chart */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">จำนวนนัดหมายตามสาขา</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={chartData.branches}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.branches.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981'][index % 2]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <p className="text-sm text-gray-600">
-              เพิ่ม แก้ไข หรือลบข้อมูลแพทย์
-            </p>
-          </div>
 
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Calendar className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900">จัดการนัดหมาย</h3>
+            {/* Department Bar Chart */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">จำนวนนัดหมายตามแผนก (Top 10)</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData.departments} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#10b981" name="จำนวนนัดหมาย" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <p className="text-sm text-gray-600">
-              ดูและจัดการนัดหมายทั้งหมด
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Settings className="w-6 h-6 text-orange-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900">จัดการแผนก/สาขา</h3>
-            </div>
-            <p className="text-sm text-gray-600">
-              จัดการแผนกและสาขาโรงพยาบาล
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-red-100 rounded-lg">
-                <BarChart className="w-6 h-6 text-red-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900">รายงานและสถิติ</h3>
-            </div>
-            <p className="text-sm text-gray-600">
-              ดูรายงานและสถิติการใช้งาน
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-indigo-100 rounded-lg">
-                <Settings className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900">ตั้งค่าระบบ</h3>
-            </div>
-            <p className="text-sm text-gray-600">
-              ตั้งค่าและกำหนดสิทธิ์การใช้งาน
-            </p>
           </div>
         </div>
         </div>
