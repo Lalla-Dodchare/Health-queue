@@ -172,11 +172,11 @@ export default function ProfilePage() {
 
         if (emailError) {
           console.error('❌ Email update error:', emailError)
-          throw new Error('ไม่สามารถเปลี่ยนอีเมลได้: ' + emailError.message)
+          throw new Error(t('profile.emailChangeError') + ': ' + emailError.message)
         }
 
         console.log('✅ Email change initiated, confirmation sent to new email')
-        setSaveMessage('ส่งลิงก์ยืนยันไปที่อีเมลใหม่แล้ว กรุณาตรวจสอบอีเมล')
+        setSaveMessage(t('profile.emailChangeSent'))
       }
 
       // Update profile in Supabase profiles table
@@ -371,7 +371,7 @@ export default function ProfilePage() {
               />
               {editing && (
                 <p className="text-xs text-amber-600 mt-1">
-                  ⚠️ การเปลี่ยนอีเมลจะส่งลิงก์ยืนยันไปที่อีเมลใหม่
+                  ⚠️ {t('profile.emailChangeWarning')}
                 </p>
               )}
             </div>
@@ -420,7 +420,7 @@ export default function ProfilePage() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t('profile.allergies') || 'อาการแพ้ยา/อาหาร'}
+                {t('profile.allergies')}
               </label>
               <input
                 type="text"
@@ -428,7 +428,7 @@ export default function ProfilePage() {
                 value={formData.allergies}
                 onChange={handleInputChange}
                 disabled={!editing}
-                placeholder={t('profile.allergiesPlaceholder') || 'เช่น แพ้ยาปฏิชีวนะ, แพ้อาหารทะเล'}
+                placeholder={t('profile.allergiesPlaceholder')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
             </div>

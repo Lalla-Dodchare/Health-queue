@@ -1,33 +1,9 @@
-import { NextResponse } from 'next/server'
+import createMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
 
-export function middleware(request) {
-  const { pathname } = request.nextUrl
-
-  // Skip middleware for static files, api routes, and login page
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/login') ||
-    pathname === '/' ||
-    pathname.includes('.')
-  ) {
-    return NextResponse.next()
-  }
-
-  // Protected routes - ไม่ต้อง check localStorage ที่นี่เพราะทำได้แค่ client-side
-  // จะให้แต่ละหน้า Dashboard check เอง
-  return NextResponse.next()
-}
+export default createMiddleware(routing)
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
-  ],
+  // Match all pathnames except api, static files, images, etc.
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
 }

@@ -59,5 +59,23 @@ test-gemini.js
 /*.sql
 *.csv
 
+# Development/testing scripts
+scripts/test-*.js
+scripts/check-*.js
+scripts/debug-*.js
+scripts/comprehensive-data-verification.js
+scripts/detailed-data-quality-check.js
+scripts/export-schema.js
+scripts/run-migration-*.js
+scripts/apply-*.js
+scripts/enable-sms-notifications.js
+scripts/create-test-*.js
+
+# Images in root (should be in public/)
+/*.jpg
+/*.png
+/*.jpeg
+/*.gif
+
 # Keep documentation that's still relevant
 # MEDICAL_CENTERS_UPDATE_SUMMARY.md is tracked intentionally

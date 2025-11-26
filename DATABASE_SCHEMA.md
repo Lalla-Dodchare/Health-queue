@@ -77,6 +77,22 @@
 | uploaded_at | timestamp | YES | now() |
 | created_at | timestamp | YES | now() |
 
+## Table: appointment_notifications
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| appointment_id | uuid | NO | null | FK to appointments |
+| reminder_type | text | NO | null | '3_days', '1_day', or '6_hours' |
+| sent_at | timestamptz | NO | now() | เวลาที่ส่ง SMS |
+| created_at | timestamptz | NO | now() | |
+
+**Constraints:**
+- UNIQUE(appointment_id, reminder_type) - ป้องกันการส่ง SMS ซ้ำ
+- CHECK(reminder_type IN ('3_days', '1_day', '6_hours'))
+
+**Purpose:** Track SMS notifications to prevent duplicate sends
+
 ## Table: appointment_queue_counters
 
 | Column | Type | Nullable | Default |
@@ -175,6 +191,8 @@
 3. **doctor_id**, **user_id** are **uuid** in appointments
 4. **treatment_file_url** stores JSON array string of file URLs
 5. **admin_messages** has auto-expire after 60 days
+6. **appointment_notifications** tracks SMS reminders sent to users (3 days, 1 day, 6 hours before appointment)
+7. **UNIQUE constraint** on (appointment_id, reminder_type) prevents duplicate SMS sends
 
 ---
 

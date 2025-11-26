@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { registerWithEmail } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 import { UserPlus, ArrowLeft, Flag } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const userType = searchParams.get('type') // 'thai' or null (default)
 
@@ -38,19 +40,19 @@ export default function RegisterPage() {
 
     // Validation
     if (formData.password.length < 6) {
-      setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร')
+      setError(t('register.errors.passwordTooShort'))
       setLoading(false)
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('รหัสผ่านไม่ตรงกัน')
+      setError(t('register.errors.passwordMismatch'))
       setLoading(false)
       return
     }
 
     if (!formData.fullName.trim()) {
-      setError('กรุณากรอกชื่อ-นามสกุล')
+      setError(t('register.errors.nameRequired'))
       setLoading(false)
       return
     }
@@ -58,17 +60,17 @@ export default function RegisterPage() {
     // Validate Thai-specific fields
     if (userType === 'thai') {
       if (!formData.phone.trim()) {
-        setError('กรุณากรอกเบอร์โทรศัพท์')
+        setError(t('register.errors.phoneRequired'))
         setLoading(false)
         return
       }
       if (!formData.idCard.trim()) {
-        setError('กรุณากรอกเลขบัตรประชาชน')
+        setError(t('register.errors.idCardRequired'))
         setLoading(false)
         return
       }
       if (formData.idCard.length !== 13) {
-        setError('เลขบัตรประชาชนต้องเป็น 13 หลัก')
+        setError(t('register.errors.idCardInvalid'))
         setLoading(false)
         return
       }
@@ -116,7 +118,7 @@ export default function RegisterPage() {
       }, 2000)
     } catch (err) {
       console.error('❌ Registration error:', err)
-      setError(err.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก')
+      setError(err.message || t('register.errors.registrationFailed'))
       setLoading(false)
     }
   }
@@ -132,10 +134,10 @@ export default function RegisterPage() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              สมัครสมาชิกสำเร็จ!
+              {t('register.success.title')}
             </h2>
             <p className="text-gray-600 mb-6">
-              กำลังนำคุณไปหน้าเข้าสู่ระบบ...
+              {t('register.success.redirecting')}
             </p>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
           </div>
@@ -154,7 +156,7 @@ export default function RegisterPage() {
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
-            กลับไปหน้าเข้าสู่ระบบ
+            {t('register.backToLogin')}
           </Link>
 
           {/* Header */}
@@ -169,12 +171,12 @@ export default function RegisterPage() {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {userType === 'thai' ? 'ลงทะเบียนคนไทย' : 'สมัครสมาชิก'}
+              {userType === 'thai' ? t('register.thaiTitle') : t('register.title')}
             </h1>
             <p className="text-gray-600">
               {userType === 'thai'
-                ? 'สำหรับพลเมืองไทย - ใช้เลขบัตรประชาชน'
-                : 'สร้างบัญชีเพื่อใช้งาน Health Queue'}
+                ? t('register.thaiSubtitle')
+                : t('register.subtitle')}
             </p>
           </div>
 
@@ -185,7 +187,7 @@ export default function RegisterPage() {
                 htmlFor="fullName"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                ชื่อ-นามสกุล *
+                {t('register.fullName')}
               </label>
               <input
                 id="fullName"
@@ -195,7 +197,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="นายสมชาย ใจดี"
+                placeholder={t('register.fullNamePlaceholder')}
                 disabled={loading}
               />
             </div>
@@ -208,7 +210,7 @@ export default function RegisterPage() {
                     htmlFor="idCard"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    เลขบัตรประชาชน * (13 หลัก)
+                    {t('register.idCard')}
                   </label>
                   <input
                     id="idCard"
@@ -220,7 +222,7 @@ export default function RegisterPage() {
                     maxLength={13}
                     pattern="[0-9]{13}"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="1234567890123"
+                    placeholder={t('register.idCardPlaceholder')}
                     disabled={loading}
                   />
                 </div>
@@ -230,7 +232,7 @@ export default function RegisterPage() {
                     htmlFor="phone"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    เบอร์โทรศัพท์ *
+                    {t('register.phone')}
                   </label>
                   <input
                     id="phone"
@@ -240,7 +242,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="08x-xxx-xxxx"
+                    placeholder={t('register.phonePlaceholder')}
                     disabled={loading}
                   />
                 </div>
@@ -252,7 +254,7 @@ export default function RegisterPage() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                อีเมล *
+                {t('register.email')}
               </label>
               <input
                 id="email"
@@ -262,7 +264,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="your@email.com"
+                placeholder={t('register.emailPlaceholder')}
                 disabled={loading}
               />
             </div>
@@ -272,7 +274,7 @@ export default function RegisterPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                รหัสผ่าน * (อย่างน้อย 6 ตัวอักษร)
+                {t('register.password')}
               </label>
               <input
                 id="password"
@@ -283,7 +285,7 @@ export default function RegisterPage() {
                 required
                 minLength={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="••••••••"
+                placeholder={t('register.passwordPlaceholder')}
                 disabled={loading}
               />
             </div>
@@ -293,7 +295,7 @@ export default function RegisterPage() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                ยืนยันรหัสผ่าน *
+                {t('register.confirmPassword')}
               </label>
               <input
                 id="confirmPassword"
@@ -303,7 +305,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="••••••••"
+                placeholder={t('register.passwordPlaceholder')}
                 disabled={loading}
               />
             </div>
@@ -325,10 +327,10 @@ export default function RegisterPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  กำลังสมัครสมาชิก...
+                  {t('register.registering')}
                 </span>
               ) : (
-                'สมัครสมาชิก'
+                t('register.submitButton')
               )}
             </button>
           </form>
@@ -336,12 +338,12 @@ export default function RegisterPage() {
           {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              มีบัญชีอยู่แล้ว?{' '}
+              {t('register.hasAccount')}{' '}
               <Link
                 href="/login"
                 className="text-blue-600 hover:text-blue-700 font-semibold"
               >
-                เข้าสู่ระบบ
+                {t('register.loginLink')}
               </Link>
             </p>
           </div>
@@ -349,7 +351,7 @@ export default function RegisterPage() {
           {/* Info Box */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-xs text-blue-800">
-              ℹ️ บัญชีที่สร้างจะเป็นบัญชีผู้ใช้ทั่วไป สามารถจองนัดหมายแพทย์ได้ทันที
+              {t('register.infoMessage')}
             </p>
           </div>
         </div>

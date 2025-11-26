@@ -87,9 +87,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
         {
           id: 'welcome',
           sender_role: 'ai',
-          message: language === 'th'
-            ? 'สวัสดีค่ะ! ยินดีต้อนรับสู่ Health Queue\n\nฉันคือผู้ช่วยด้านสุขภาพอัจฉริยะ พร้อมให้คำแนะนำเบื้องต้นเกี่ยวกับ:\n• อาการเบื้องต้น\n• โภชนาการและการออกกำลังกาย\n• การดูแลสุขภาพทั่วไป\n• แนะนำแผนกแพทย์ที่เหมาะสม\n\nมีอะไรให้ช่วยไหมคะ? 😊'
-            : 'Hello! Welcome to Health Queue\n\nI am an intelligent health assistant ready to provide preliminary advice on:\n• Basic symptoms\n• Nutrition and exercise\n• General health care\n• Recommend appropriate medical departments\n\nHow can I help you? 😊',
+          message: t('chatbot.welcome'),
           created_at: new Date().toISOString(),
         },
       ])
@@ -144,9 +142,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
           {
             id: 'welcome',
             sender_role: 'ai',
-            message: language === 'th'
-              ? 'สวัสดีค่ะ! ยินดีต้อนรับสู่ Health Queue\n\nฉันคือผู้ช่วยด้านสุขภาพอัจฉริยะ พร้อมให้คำแนะนำเบื้องต้นเกี่ยวกับ:\n• อาการเบื้องต้น\n• โภชนาการและการออกกำลังกาย\n• การดูแลสุขภาพทั่วไป\n• แนะนำแผนกแพทย์ที่เหมาะสม\n\nหากต้องการคุยกับเจ้าหน้าที่จริงๆ บอก "คุยกับคน" ได้เลยนะคะ 😊'
-              : 'Hello! Welcome to Health Queue\n\nI am an intelligent health assistant ready to provide preliminary advice on:\n• Basic symptoms\n• Nutrition and exercise\n• General health care\n• Recommend appropriate medical departments\n\nIf you need to talk to a real person, just say "talk to admin" 😊',
+            message: `${t('chatbot.welcome')}\n\n${t('chatbot.welcomeWithHint')}`,
             created_at: new Date().toISOString(),
           },
         ])
@@ -258,9 +254,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
           const systemMsg = {
             id: (Date.now() + 1).toString(),
             sender_role: 'system',
-            message: language === 'th'
-              ? `🔄 เข้าใจแล้วค่ะ กำลังเชื่อมต่อกับเจ้าหน้าที่...\n\n${data.reason}\n\nเจ้าหน้าที่จะตอบกลับโดยเร็วที่สุดค่ะ`
-              : `🔄 Understood. Connecting to admin...\n\n${data.reason}\n\nOur staff will respond as soon as possible.`,
+            message: t('chatbot.switchToAdmin').replace('{reason}', data.reason),
             created_at: new Date().toISOString(),
           }
 
@@ -301,9 +295,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
           const systemMsg = {
             id: (Date.now() + 1).toString(),
             sender_role: 'system',
-            message: language === 'th'
-              ? `🤖 เปลี่ยนเป็นโหมด AI แล้วค่ะ\n\n${data.reason}\n\nยินดีให้คำปรึกษาต่อนะคะ!`
-              : `🤖 Switched to AI mode\n\n${data.reason}\n\nHappy to help you!`,
+            message: t('chatbot.switchToAI').replace('{reason}', data.reason),
             created_at: new Date().toISOString(),
           }
 
@@ -360,9 +352,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
         const errorMsg = {
           id: (Date.now() + 1).toString(),
           sender_role: 'ai',
-          message: language === 'th'
-            ? 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง หรือพิมพ์ "คุยกับคน" เพื่อติดต่อเจ้าหน้าที่'
-            : 'Sorry, an error occurred. Please try again or type "talk to admin" to contact our staff',
+          message: t('chatbot.aiError'),
           created_at: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, errorMsg])
@@ -391,7 +381,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
         setMessages((prev) => [...prev, data])
       } catch (error) {
         console.error('Error sending to admin:', error)
-        alert(language === 'th' ? 'ส่งข้อความไม่สำเร็จ' : 'Failed to send message')
+        alert(t('chatbot.sendFailed'))
       }
     }
 
@@ -421,8 +411,8 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
     const now = new Date()
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
 
-    if (diffDays === 0) return language === 'th' ? 'วันนี้' : 'Today'
-    if (diffDays === 1) return language === 'th' ? 'เมื่อวาน' : 'Yesterday'
+    if (diffDays === 0) return t('chatbot.today')
+    if (diffDays === 1) return t('chatbot.yesterday')
     return date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US')
   }
 
@@ -454,7 +444,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
 
           {/* Tooltip */}
           <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            {language === 'th' ? 'ผู้ช่วยสุขภาพ AI + แอดมิน' : 'AI Health Assistant + Admin'}
+            {t('chatbot.aiAdminTitle')}
           </div>
         </button>
       )}
@@ -476,12 +466,10 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
               </div>
               <div>
                 <h3 className="font-semibold">
-                  {mode === 'ai'
-                    ? (language === 'th' ? 'AI ผู้ช่วยสุขภาพ' : 'AI Health Assistant')
-                    : (language === 'th' ? 'แอดมิน' : 'Admin')}
+                  {mode === 'ai' ? t('chatbot.aiTitle') : t('chatbot.adminTitle')}
                 </h3>
                 <p className="text-xs opacity-90">
-                  {loading ? (language === 'th' ? 'กำลังตอบ...' : 'Typing...') : 'Online'}
+                  {loading ? t('chatbot.typing') : t('chatbot.online')}
                 </p>
               </div>
             </div>
@@ -508,9 +496,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
               <div className="flex items-center gap-2 text-xs">
                 <div className={`w-2 h-2 rounded-full ${mode === 'ai' ? 'bg-blue-500' : 'bg-purple-500'} animate-pulse`}></div>
                 <span className="text-gray-600">
-                  {mode === 'ai'
-                    ? (language === 'th' ? '🤖 โหมด AI (พิมพ์ "คุยกับคน" เพื่อเปลี่ยน)' : '🤖 AI Mode (type "talk to admin" to switch)')
-                    : (language === 'th' ? '👨‍⚕️ โหมดแอดมิน (พิมพ์ "คุยกับ AI" เพื่อเปลี่ยน)' : '👨‍⚕️ Admin Mode (type "talk to AI" to switch)')}
+                  {mode === 'ai' ? t('chatbot.modeIndicatorAI') : t('chatbot.modeIndicatorAdmin')}
                 </span>
               </div>
             </div>
@@ -528,7 +514,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
                   <div className="text-center py-12">
                     <Bot className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-500 text-sm">
-                      {language === 'th' ? 'เริ่มแชทเลย!' : 'Start chatting!'}
+                      {t('chatbot.startChatting')}
                     </p>
                   </div>
                 ) : (
@@ -638,11 +624,7 @@ export default function UnifiedChatbot({ userId, userRole = 'user', defaultMode 
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder={
-                      language === 'th'
-                        ? (mode === 'ai' ? 'ถามเกี่ยวกับสุขภาพ...' : 'พิมพ์ข้อความ...')
-                        : (mode === 'ai' ? 'Ask about health...' : 'Type a message...')
-                    }
+                    placeholder={mode === 'ai' ? t('chatbot.inputPlaceholderAI') : t('chatbot.inputPlaceholderAdmin')}
                     disabled={loading}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:border-blue-500 focus:outline-none disabled:bg-gray-100"
                   />

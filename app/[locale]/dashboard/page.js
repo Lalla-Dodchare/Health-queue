@@ -31,7 +31,7 @@ export default function UserDashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 3)
-    }, 5000) // เปลี่ยนสไลด์ทุก 5 วินาที
+    }, 5000) // Auto-change slide every 5 seconds
 
     return () => clearInterval(interval)
   }, [])
@@ -426,7 +426,7 @@ export default function UserDashboard() {
       }
 
       if (currentUser.role !== 'user') {
-        // ถ้า role ไม่ใช่ user ให้ redirect ไปหน้าที่ถูกต้อง
+        // If role is not user, redirect to correct page
         router.push(`/${currentUser.role === 'admin' ? 'admin' : 'doctor'}/dashboard`)
         return
       }
@@ -619,8 +619,8 @@ export default function UserDashboard() {
                 </h3>
                 <p className="text-gray-600 text-sm mb-3">{t('dashboard.suitableForAllAges')}</p>
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-2xl font-bold text-gray-900">5,990 ฿</span>
-                  <span className="text-sm text-gray-500 line-through">7,500 ฿</span>
+                  <span className="text-2xl font-bold text-gray-900">5,990 {t('dashboard.baht')}</span>
+                  <span className="text-sm text-gray-500 line-through">7,500 {t('dashboard.baht')}</span>
                 </div>
                 <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
                   {t('dashboard.add')}
@@ -642,8 +642,8 @@ export default function UserDashboard() {
                 </h3>
                 <p className="text-gray-600 text-sm mb-3">{t('dashboard.specializedForWomen')}</p>
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-2xl font-bold text-gray-900">8,500 ฿</span>
-                  <span className="text-sm text-gray-500 line-through">11,000 ฿</span>
+                  <span className="text-2xl font-bold text-gray-900">8,500 {t('dashboard.baht')}</span>
+                  <span className="text-sm text-gray-500 line-through">11,000 {t('dashboard.baht')}</span>
                 </div>
                 <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
                   {t('dashboard.add')}
@@ -665,8 +665,8 @@ export default function UserDashboard() {
                 </h3>
                 <p className="text-gray-600 text-sm mb-3">{t('dashboard.comprehensiveForElderly')}</p>
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-2xl font-bold text-gray-900">12,900 ฿</span>
-                  <span className="text-sm text-gray-500 line-through">15,500 ฿</span>
+                  <span className="text-2xl font-bold text-gray-900">12,900 {t('dashboard.baht')}</span>
+                  <span className="text-sm text-gray-500 line-through">15,500 {t('dashboard.baht')}</span>
                 </div>
                 <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
                   {t('dashboard.add')}
@@ -902,7 +902,7 @@ export default function UserDashboard() {
                 })()}
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900 mb-1">{selectedCenter.name}</h2>
-                  <p className="text-blue-600 font-medium">สาขา{selectedBranch}</p>
+                  <p className="text-blue-600 font-medium">{t('dashboard.branchPrefix')}{selectedBranch}</p>
                   {selectedCenter.nameEn && (
                     <p className="text-gray-600">{selectedCenter.nameEn}</p>
                   )}

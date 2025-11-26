@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { loginWithEmail, loginWithGoogle, getCurrentUser, getRedirectPath } from '@/lib/auth'
+import { useTranslation } from '@/hooks/useTranslation'
 import { LogIn } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -51,7 +53,7 @@ export default function LoginPage() {
       router.push(redirectPath)
     } catch (err) {
       console.error('❌ Login error:', err)
-      setError(err.message || 'เข้าสู่ระบบไม่สำเร็จ')
+      setError(err.message || t('login.loginFailed'))
       setLoading(false)
     }
   }
@@ -63,7 +65,7 @@ export default function LoginPage() {
       await loginWithGoogle()
     } catch (err) {
       console.error('❌ Google login error:', err)
-      setError('เข้าสู่ระบบด้วย Google ไม่สำเร็จ')
+      setError(t('login.googleLoginFailed'))
       setLoading(false)
     }
   }
@@ -71,7 +73,7 @@ export default function LoginPage() {
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="text-gray-600">กำลังตรวจสอบ...</div>
+        <div className="text-gray-600">{t('login.checking')}</div>
       </div>
     )
   }
@@ -88,10 +90,10 @@ export default function LoginPage() {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Health Queue
+              {t('login.title')}
             </h1>
             <p className="text-gray-600">
-              เข้าสู่ระบบจัดการคิวโรงพยาบาล
+              {t('login.subtitle')}
             </p>
           </div>
 
@@ -102,7 +104,7 @@ export default function LoginPage() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                อีเมล
+                {t('login.email')}
               </label>
               <input
                 id="email"
@@ -111,7 +113,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="your@email.com"
+                placeholder={t('login.emailPlaceholder')}
                 disabled={loading}
               />
             </div>
@@ -121,7 +123,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                รหัสผ่าน
+                {t('login.password')}
               </label>
               <input
                 id="password"
@@ -130,7 +132,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="••••••••"
+                placeholder={t('login.passwordPlaceholder')}
                 disabled={loading}
               />
             </div>
@@ -152,10 +154,10 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  กำลังเข้าสู่ระบบ...
+                  {t('login.loggingIn')}
                 </span>
               ) : (
-                'เข้าสู่ระบบ'
+                t('login.loginButton')
               )}
             </button>
           </form>
@@ -166,7 +168,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">หรือ</span>
+              <span className="px-2 bg-white text-gray-500">{t('login.or')}</span>
             </div>
           </div>
 
@@ -183,18 +185,18 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            {loading ? 'กำลังเชื่อมต่อ...' : 'เข้าสู่ระบบด้วย Google'}
+            {loading ? t('login.connecting') : t('login.loginWithGoogle')}
           </button>
 
           {/* Register Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              ยังไม่มีบัญชี?{' '}
+              {t('login.noAccount')}{' '}
               <Link
                 href="/register"
                 className="text-blue-600 hover:text-blue-700 font-semibold"
               >
-                สมัครสมาชิก
+                {t('login.register')}
               </Link>
             </p>
           </div>
@@ -202,10 +204,10 @@ export default function LoginPage() {
           {/* Info */}
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800 mb-2 font-medium">
-              ℹ️ สำหรับผู้ใช้งาน
+              {t('login.infoTitle')}
             </p>
             <p className="text-xs text-blue-700">
-              ระบบจะตรวจสอบสิทธิ์อัตโนมัติ (User/Admin/Doctor) และนำคุณไปยังหน้าที่เหมาะสม
+              {t('login.infoDescription')}
             </p>
           </div>
         </div>

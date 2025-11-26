@@ -13,6 +13,7 @@ import { getCurrentUser, logout } from '@/lib/auth'
 import { useTranslation } from '@/hooks/useTranslation'
 import SearchDoctor from './SearchDoctor'
 import NotificationDropdown from './NotificationDropdown'
+import LanguageSelector from './LanguageSelector'
 import { supabase } from '@/lib/supabase'
 import {
   Menu,
@@ -32,7 +33,7 @@ import {
 
 export default function UserHeader() {
   const router = useRouter()
-  const { t, language, toggleLanguage } = useTranslation()
+  const { t } = useTranslation()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -179,16 +180,8 @@ export default function UserHeader() {
             {/* Notifications */}
             <NotificationDropdown userId={user?.id} />
 
-            {/* Language Switcher */}
-            <button
-              onClick={toggleLanguage}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
-            >
-              <Globe className="w-5 h-5 text-gray-600 flex-shrink-0" />
-              <span className="font-medium text-gray-700 text-sm">
-                {language === 'th' ? 'TH' : 'EN'}
-              </span>
-            </button>
+            {/* Language Selector */}
+            <LanguageSelector />
 
             {/* Profile Menu with Name */}
             <div ref={profileRef} className="relative flex-shrink-0">
@@ -313,13 +306,9 @@ export default function UserHeader() {
               <span>{t('userHeader.profile')}</span>
             </Link>
 
-            <button
-              onClick={toggleLanguage}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-lg"
-            >
-              <Globe className="w-5 h-5 text-gray-600" />
-              <span>{language === 'th' ? t('userHeader.switchToEnglish') : t('userHeader.switchToThai')}</span>
-            </button>
+            <div className="px-4 py-2">
+              <LanguageSelector />
+            </div>
 
             <button
               onClick={handleLogout}
