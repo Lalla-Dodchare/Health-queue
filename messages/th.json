@@ -38,7 +38,8 @@
   "header": {
     "appointments": "นัดหมายของฉัน",
     "notifications": "การแจ้งเตือน",
-    "searchPlaceholder": "ค้นหาแพทย์ แผนก..."
+    "searchPlaceholder": "ค้นหาแพทย์ แผนก...",
+    "quickBook": "จองนัดหมาย"
   },
   "footer": {
     "aboutUs": "Health Queue คือระบบจองนัดหมายโรงพยาบาลออนไลน์ทั่วประเทศ เราทำให้การนัดหมายกับแพทย์และผู้เชี่ยวชาญเป็นเรื่องง่าย",
@@ -55,6 +56,17 @@
     "saturdayToSunday": "เสาร์ - อาทิตย์",
     "available24Hours": "จองออนไลน์ได้ตลอด 24 ชั่วโมง",
     "allRightsReserved": "สงวนลิขสิทธิ์"
+  },
+  "carousel": {
+    "slide1": "บริการสุขภาพครบวงจร",
+    "slide1Title": "สุขภาพของคุณคือสิ่งสำคัญ",
+    "slide1Description": "บริการทางการแพทย์ที่ครบครันด้วยอุปกรณ์ทันสมัยและผู้เชี่ยวชาญที่มีประสบการณ์",
+    "slide2": "จองนัดหมายง่ายๆ",
+    "slide2Title": "จองได้ทุกที่ ทุกเวลา",
+    "slide2Description": "นัดหมายแพทย์ออนไลน์ได้ตลอด 24 ชั่วโมง เพียงไม่กี่คลิก",
+    "slide3": "ทีมแพทย์ผู้เชี่ยวชาญ",
+    "slide3Title": "มั่นใจในความเชี่ยวชาญของเรา",
+    "slide3Description": "แพทย์และบุคลากรทางการแพทย์ที่ได้รับการรับรองพร้อมดูแลสุขภาพของคุณ"
   },
   "dashboard": {
     "title": "แดชบอร์ด",
@@ -95,6 +107,8 @@
     "add": "เพิ่มในตะกร้า",
     "healthArticles": "บทความสุขภาพ",
     "readMore": "อ่านเพิ่มเติม",
+    "medicalCenters": "ศูนย์การแพทย์และคลินิก",
+    "medicalCentersDescription": "บริการสุขภาพครบวงจรจากศูนย์การแพทย์และคลินิกเฉพาะทาง",
     "centersAndClinics": "ศูนย์การแพทย์และคลินิก",
     "aboutCenter": "เกี่ยวกับศูนย์",
     "treatmentServices": "การรักษาและบริการ",
@@ -146,7 +160,26 @@
   "search": {
     "searching": "กำลังค้นหา...",
     "noResults": "ไม่พบผลลัพธ์",
-    "bookNow": "จองเลย"
+    "bookNow": "จองเลย",
+    "branch": "สาขา"
+  },
+  "doctors": {
+    "title": "ค้นหาแพทย์",
+    "searchDoctor": "ค้นหาแพทย์, แผนก, สาขา...",
+    "showing": "แสดง",
+    "results": "รายการ",
+    "filterBy": "กรองตาม",
+    "allBranches": "ทุกสาขา",
+    "allDepartments": "ทุกแผนก",
+    "noDoctorsFound": "ไม่พบแพทย์",
+    "makeAppointment": "จองนัดหมาย",
+    "details": "รายละเอียด"
+  },
+  "doctorDetail": {
+    "backToDoctors": "กลับไปหน้ารายชื่อแพทย์",
+    "centerAndClinic": "ศูนย์การแพทย์และคลินิก",
+    "doctorNotFound": "ไม่พบข้อมูลแพทย์",
+    "backToDoctorsList": "กลับไปหน้ารายชื่อแพทย์"
   },
   "chatbot": {
     "title": "ผู้ช่วยทางการแพทย์",
@@ -185,8 +218,6 @@
     "or": "หรือ",
     "noAccount": "ยังไม่มีบัญชี?",
     "register": "สมัครสมาชิก",
-    "infoTitle": "ℹ️ สำหรับผู้ใช้งาน",
-    "infoDescription": "ระบบจะตรวจสอบสิทธิ์อัตโนมัติ (User/Admin/Doctor) และนำคุณไปยังหน้าที่เหมาะสม",
     "loginFailed": "เข้าสู่ระบบไม่สำเร็จ",
     "googleLoginFailed": "เข้าสู่ระบบด้วย Google ไม่สำเร็จ",
     "checking": "กำลังตรวจสอบ..."
@@ -245,6 +276,8 @@
     "treatmentFiles": "ไฟล์ผลการรักษา",
     "downloadFile": "ดาวน์โหลดไฟล์ที่",
     "downloadTreatmentFile": "ดาวน์โหลดไฟล์ผลการรักษา",
+    "notes": "หมายเหตุ",
+    "cancel": "ยกเลิกนัด",
     "confirmCancel": "คุณแน่ใจหรือไม่ว่าต้องการยกเลิกนัดหมายนี้?",
     "cancelSuccess": "ยกเลิกนัดหมายสำเร็จ",
     "status": {
@@ -264,8 +297,18 @@
     "fullName": "ชื่อ-นามสกุล",
     "email": "อีเมล",
     "phone": "เบอร์โทรศัพท์",
+    "gender": "เพศ",
+    "selectGender": "เลือกเพศ",
+    "male": "ชาย",
+    "female": "หญิง",
+    "other": "อื่นๆ",
     "dateOfBirth": "วันเกิด",
-    "address": "ที่อยู่",
+    "idCard": "เลขบัตรประชาชน",
+    "idCardPlaceholder": "กรอกเลขบัตรประชาชน 13 หลัก",
+    "idCardHint": "สำหรับคนไทย (13 หลัก)",
+    "passport": "หมายเลขพาสปอร์ต",
+    "passportPlaceholder": "กรอกหมายเลขพาสปอร์ต",
+    "passportHint": "สำหรับชาวต่างชาติ",
     "allergies": "ประวัติแพ้ยา",
     "allergiesPlaceholder": "กรอกประวัติแพ้ยาของคุณ",
     "emergencyContact": "ผู้ติดต่อฉุกเฉิน",
@@ -293,6 +336,13 @@
     "passwordChanged": "เปลี่ยนรหัสผ่านสำเร็จ",
     "notificationsSaved": "บันทึกการตั้งค่าการแจ้งเตือนสำเร็จ",
     "emailChangeError": "ไม่สามารถเปลี่ยนอีเมลได้",
+    "verificationCodeSent": "ส่งรหัสยืนยันไปยังอีเมลใหม่แล้ว",
+    "enterVerificationCode": "กรอกรหัสยืนยันจากอีเมล",
+    "verificationCodeSentTo": "ส่งรหัสยืนยันไปที่",
+    "verificationCodePlaceholder": "กรอกรหัส 6 หลัก",
+    "verify": "ยืนยัน",
+    "cancelEmailChange": "ยกเลิกการเปลี่ยนอีเมล",
+    "emailChanged": "เปลี่ยนอีเมลสำเร็จ",
     "emailChangeSent": "ส่งลิงก์ยืนยันไปที่อีเมลใหม่แล้ว กรุณาตรวจสอบอีเมล",
     "emailChangeWarning": "การเปลี่ยนอีเมลจะส่งลิงก์ยืนยันไปที่อีเมลใหม่"
   }

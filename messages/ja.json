@@ -37,7 +37,8 @@
   "header": {
     "appointments": "私の予約",
     "notifications": "通知",
-    "searchPlaceholder": "医師、専門分野を検索..."
+    "searchPlaceholder": "医師、専門分野を検索...",
+    "quickBook": "クイック予約"
   },
   "footer": {
     "aboutUs": "ヘルスキューは全国のオンライン病院予約システムです。医師や専門家との予約を簡単にします。",
@@ -54,6 +55,17 @@
     "saturdayToSunday": "土曜日 - 日曜日",
     "available24Hours": "24時間オンライン予約可能",
     "allRightsReserved": "全著作権所有"
+  },
+  "carousel": {
+    "slide1": "高度な医療サービス",
+    "slide1Title": "あなたの健康が最優先",
+    "slide1Description": "最新設備と経験豊富な専門家による総合医療サービス",
+    "slide2": "簡単予約システム",
+    "slide2Title": "いつでもどこでも予約",
+    "slide2Description": "数クリックで24時間オンライン医療予約が可能",
+    "slide3": "専門医療チーム",
+    "slide3Title": "私たちの専門知識を信頼",
+    "slide3Description": "認定医師と医療従事者があなたの健康をサポート"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -94,6 +106,8 @@
     "add": "カートに追加",
     "healthArticles": "健康記事",
     "readMore": "続きを読む",
+    "medicalCenters": "医療センターとクリニック",
+    "medicalCentersDescription": "専門医療センターとクリニックからの総合医療サービス",
     "centersAndClinics": "医療センターとクリニック",
     "aboutCenter": "センターについて",
     "treatmentServices": "治療とサービス",
@@ -145,7 +159,26 @@
   "search": {
     "searching": "検索中...",
     "noResults": "結果が見つかりません",
-    "bookNow": "今すぐ予約"
+    "bookNow": "今すぐ予約",
+    "branch": "支店"
+  },
+  "doctors": {
+    "title": "医師を探す",
+    "searchDoctor": "医師、診療科、支店を検索...",
+    "showing": "表示中",
+    "results": "件",
+    "filterBy": "絞り込み",
+    "allBranches": "すべての支店",
+    "allDepartments": "すべての診療科",
+    "noDoctorsFound": "医師が見つかりません",
+    "makeAppointment": "予約する",
+    "details": "詳細"
+  },
+  "doctorDetail": {
+    "backToDoctors": "医師一覧に戻る",
+    "centerAndClinic": "医療センターとクリニック",
+    "doctorNotFound": "医師が見つかりません",
+    "backToDoctorsList": "医師一覧に戻る"
   },
   "chatbot": {
     "title": "医療アシスタント",
@@ -184,8 +217,6 @@
     "or": "または",
     "noAccount": "アカウントをお持ちでないですか？",
     "register": "登録",
-    "infoTitle": "ℹ️ ユーザーの皆様へ",
-    "infoDescription": "システムは自動的に権限（ユーザー/管理者/医師）を確認し、適切なページに移動します",
     "loginFailed": "ログインに失敗しました",
     "googleLoginFailed": "Googleログインに失敗しました",
     "checking": "確認中..."
@@ -244,6 +275,8 @@
     "treatmentFiles": "治療ファイル",
     "downloadFile": "ファイルをダウンロード",
     "downloadTreatmentFile": "治療ファイルをダウンロード",
+    "notes": "備考",
+    "cancel": "キャンセル",
     "confirmCancel": "この予約をキャンセルしてもよろしいですか？",
     "cancelSuccess": "予約が正常にキャンセルされました",
     "status": {
@@ -263,8 +296,18 @@
     "fullName": "フルネーム",
     "email": "メールアドレス",
     "phone": "電話番号",
+    "gender": "性別",
+    "selectGender": "性別を選択",
+    "male": "男性",
+    "female": "女性",
+    "other": "その他",
     "dateOfBirth": "生年月日",
-    "address": "住所",
+    "idCard": "IDカード番号",
+    "idCardPlaceholder": "13桁のIDカード番号を入力",
+    "idCardHint": "タイ国民の方（13桁）",
+    "passport": "パスポート番号",
+    "passportPlaceholder": "パスポート番号を入力",
+    "passportHint": "外国籍の方",
     "allergies": "アレルギー",
     "allergiesPlaceholder": "アレルギーを入力してください",
     "emergencyContact": "緊急連絡先",
@@ -293,6 +336,13 @@
     "notificationsSaved": "通知設定を保存しました",
     "emailChangeError": "メールアドレスを変更できません",
     "emailChangeSent": "新しいメールアドレスに確認リンクを送信しました。メールをご確認ください",
-    "emailChangeWarning": "メールアドレスを変更すると、新しいアドレスに確認リンクが送信されます"
+    "emailChangeWarning": "メールアドレスを変更するには、新しいメールアドレスにOTP認証が必要です",
+    "verificationCodeSent": "新しいメールアドレスに認証コードを送信しました",
+    "enterVerificationCode": "メールから認証コードを入力してください",
+    "verificationCodeSentTo": "認証コード送信先",
+    "verificationCodePlaceholder": "6桁のコードを入力",
+    "verify": "認証",
+    "cancelEmailChange": "メールアドレス変更をキャンセル",
+    "emailChanged": "メールアドレスが変更されました"
   }
 }

@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import AdminSidebar from '@/components/admin/Sidebar'
-import { Send, Search, User, Clock, MessageCircle } from 'lucide-react'
+import TagBadge from '@/components/admin/TagBadge'
+import TagSelectorModal from '@/components/admin/TagSelectorModal'
+import CannedResponsePicker from '@/components/admin/CannedResponsePicker'
+import { Send, Search, User, Clock, MessageCircle, Tag, Plus, MessageSquare } from 'lucide-react'
+import { TAG_TEMPLATES } from '@/lib/tag-templates'
 
 export default function AdminChatPage() {
   const router = useRouter()
@@ -17,6 +21,10 @@ export default function AdminChatPage() {
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [sending, setSending] = useState(false)
+  const [userTags, setUserTags] = useState([])
+  const [showTagModal, setShowTagModal] = useState(false)
+  const [loadingTags, setLoadingTags] = useState(false)
+  const [showCannedPicker, setShowCannedPicker] = useState(false)
   const messagesEndRef = useRef(null)
 
   // Auto-scroll to bottom
@@ -126,6 +134,43 @@ export default function AdminChatPage() {
     fetchConversations()
   }, [user])
 
+  // Fetch tags for selected chat
+  useEffect(() => {
+    if (!selectedChat) {
+      setUserTags([])
+      return
+    }
+
+    const fetchTags = async () => {
+      setLoadingTags(true)
+      try {
+        const response = await fetch(`/api/admin/chat/tags?user_id=${selectedChat.user_id}`)
+        const data = await response.json()
+
+        if (response.ok) {
+          // Merge tags with emoji from TAG_TEMPLATES
+          const tagsWithEmoji = (data.tags || []).map((tag) => {
+            const category = tag.tag_category
+            const template = TAG_TEMPLATES[category]?.find((t) => t.name === tag.tag_name)
+            return {
+              ...tag,
+              emoji: template?.emoji || null
+            }
+          })
+          setUserTags(tagsWithEmoji)
+        } else {
+          console.error('Error fetching tags:', data.error)
+        }
+      } catch (error) {
+        console.error('Error fetching tags:', error)
+      } finally {
+        setLoadingTags(false)
+      }
+    }
+
+    fetchTags()
+  }, [selectedChat])
+
   // Fetch messages for selected chat
   useEffect(() => {
     if (!selectedChat) return
@@ -218,6 +263,32 @@ export default function AdminChatPage() {
     }
   }
 
+  const handleTagAdded = (newTag) => {
+    setUserTags((prev) => [...prev, newTag])
+    setShowTagModal(false)
+  }
+
+  const handleRemoveTag = async (tag) => {
+    if (!confirm(`ต้องการลบ tag "${tag.tag_name}" หรือไม่?`)) return
+
+    try {
+      const response = await fetch(`/api/admin/chat/tags/${tag.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setUserTags((prev) => prev.filter((t) => t.id !== tag.id))
+      } else {
+        alert('ไม่สามารถลบ tag ได้: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error removing tag:', error)
+      alert('เกิดข้อผิดพลาดในการลบ tag')
+    }
+  }
+
   const filteredConversations = conversations.filter((conv) =>
     conv.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -296,24 +367,28 @@ export default function AdminChatPage() {
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {selectedChat ? (
-            <>
-              {/* Chat Header */}
-              <div className="p-4 bg-white border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {selectedChat.profiles?.full_name || 'ไม่ระบุชื่อ'}
-                    </h3>
-                    <p className="text-sm text-gray-500">{selectedChat.profiles?.email}</p>
+        {/* Chat Area + Sidebar */}
+        <div className="flex-1 flex">
+          {/* Chat Area */}
+          <div className="flex-1 flex flex-col">
+            {selectedChat ? (
+              <>
+                {/* Chat Header */}
+                <div className="p-4 bg-white border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {selectedChat.profiles?.full_name || 'ไม่ระบุชื่อ'}
+                        </h3>
+                        <p className="text-sm text-gray-500">{selectedChat.profiles?.email}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -339,38 +414,135 @@ export default function AdminChatPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input */}
-              <div className="p-4 bg-white border-t border-gray-200">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="พิมพ์ข้อความ..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    disabled={sending}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newMessage.trim() || sending}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-4 h-4" />
-                    ส่ง
-                  </button>
-                </form>
+                {/* Message Input */}
+                <div className="p-4 bg-white border-t border-gray-200">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCannedPicker(true)}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition flex items-center gap-2"
+                      title="เลือกข้อความสำเร็จรูป"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="พิมพ์ข้อความ... (หรือ shortcut เช่น /hello)"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      disabled={sending}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim() || sending}
+                      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-4 h-4" />
+                      ส่ง
+                    </button>
+                  </form>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-400">
+                <div className="text-center">
+                  <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p>เลือกการสนทนาเพื่อเริ่มแชท</p>
+                </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p>เลือกการสนทนาเพื่อเริ่มแชท</p>
+            )}
+          </div>
+
+          {/* Right Sidebar - Quick Info */}
+          {selectedChat && (
+            <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
+              <div className="p-4">
+                {/* User Info */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">ข้อมูลผู้ใช้</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500">ชื่อ-นามสกุล</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedChat.profiles?.full_name || 'ไม่ระบุ'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">อีเมล</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedChat.profiles?.email || 'ไม่ระบุ'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tags Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Tag className="w-5 h-5" />
+                      Tags
+                    </h3>
+                    <button
+                      onClick={() => setShowTagModal(true)}
+                      className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded transition"
+                      title="เพิ่ม Tag"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {loadingTags ? (
+                    <div className="text-sm text-gray-500">กำลังโหลด tags...</div>
+                  ) : userTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {userTags.map((tag) => (
+                        <TagBadge
+                          key={tag.id}
+                          tag={tag}
+                          onRemove={handleRemoveTag}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">
+                      ยังไม่มี tags
+                      <button
+                        onClick={() => setShowTagModal(true)}
+                        className="text-red-600 hover:text-red-700 ml-1 underline"
+                      >
+                        เพิ่ม tag
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Tag Selector Modal */}
+      {showTagModal && selectedChat && (
+        <TagSelectorModal
+          userId={selectedChat.user_id}
+          existingTags={userTags}
+          onClose={() => setShowTagModal(false)}
+          onTagAdded={handleTagAdded}
+        />
+      )}
+
+      {/* Canned Response Picker Modal */}
+      {showCannedPicker && (
+        <CannedResponsePicker
+          onSelect={(message) => {
+            setNewMessage(message)
+            setShowCannedPicker(false)
+          }}
+          onClose={() => setShowCannedPicker(false)}
+        />
+      )}
     </div>
   )
 }

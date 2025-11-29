@@ -2,11 +2,159 @@
 
 ## Health Queue Management System - Database ERD
 
+---
+
+## 🎯 ภาพรวมระบบ: ระบบประกอบด้วยอะไรบ้าง (System Overview) - **✨ เพิ่มใหม่**
+
+### **1️⃣ ผู้ใช้งานในระบบ (System Users/Actors)**
+
+#### 👤 **ผู้ป่วย/คนไข้ (Patient)**
+**ตารางที่เกี่ยวข้อง:** `profiles`
+
+**ทำอะไรได้บ้าง:**
+- จองนัดหมาย → `appointments`
+- อัพโหลดเอกสาร → `appointment_files`
+- รับการแจ้งเตือน SMS → `appointment_notifications`
+- รับการแจ้งเตือนในแอป → `notifications`
+- รับข้อความจาก admin → `admin_messages`
+- ชำระเงิน → `payments`
+
+---
+
+#### 👨‍⚕️ **แพทย์ (Doctor)**
+**ตารางที่เกี่ยวข้อง:** `doctors`
+
+**ทำอะไรได้บ้าง:**
+- รับนัดหมายจากผู้ป่วย → `appointments`
+- มีคิวในแต่ละวัน → `appointment_queue_counters`
+
+**เชื่อมโยงกับ:**
+- สังกัดสาขา → `branches`
+- สังกัดแผนก → `departments`
+
+---
+
+#### 👨‍💼 **ผู้ดูแลระบบ (Admin)**
+**ตารางที่เกี่ยวข้อง:** `admins` + `profiles`
+
+**ทำอะไรได้บ้าง:**
+- ส่งข้อความหาผู้ป่วย → `admin_messages`
+- จัดการนัดหมาย → `appointments`
+- อนุมัติ/ปฏิเสธนัดหมาย → `appointments.status`
+
+---
+
+### **2️⃣ ระบบหลักในโปรแกรม (Core Systems/Modules)**
+
+#### 📅 **ระบบจองคิูนัดหมาย (Appointment Booking System)**
+**ตารางที่เกี่ยวข้อง:**
+- `appointments` - ตารางหลักเก็บข้อมูลการนัดหมาย
+- `appointment_files` - ไฟล์เอกสารแนบ (ใบส่งตัว, ผลแล็บ)
+- `appointment_queue_counters` - จัดการหมายเลขคิวของแพทย์แต่ละวัน
+
+**เชื่อมโยงกับ:**
+- `profiles` (ผู้จอง)
+- `doctors` (แพทย์ที่นัด)
+- `branches` (สาขา)
+- `departments` (แผนก)
+
+**สถานะการนัดหมาย:** `booked` → `approved` → `completed` (หรือ `cancelled`/`rejected`)
+
+---
+
+#### 🔔 **ระบบแจ้งเตือน (Notification System)**
+
+**A. การแจ้งเตือน SMS อัตโนมัติ**
+**ตารางที่เกี่ยวข้อง:** `appointment_notifications`
+
+**กลไก:**
+- ส่ง SMS ก่อนนัดหมาย 3 รูปแบบ: `3_days`, `1_day`, `6_hours`
+- มี UNIQUE constraint ป้องกันส่งซ้ำ
+
+**เชื่อมโยงกับ:** `appointments`
+
+**B. การแจ้งเตือนในแอป**
+**ตารางที่เกี่ยวข้อง:** `notifications`
+
+**เชื่อมโยงกับ:** `profiles`
+
+---
+
+#### 💬 **ระบบข้อความ Admin (Admin Messaging System)**
+**ตารางที่เกี่ยวข้อง:** `admin_messages`, `chat_tags`
+
+**คุณสมบัติ:**
+- ข้อความระหว่าง admin และผู้ใช้
+- มี auto-expire (หมดอายุใน 60 วัน)
+- ติดตามสถานะ `is_read`
+- ระบบ Tags สำหรับจัดหมวดหมู่ผู้ใช้ (สถานะการนัด, ความต้องการพิเศษ, ประเภทลูกค้า)
+
+**เชื่อมโยงกับ:**
+- `admins` (ผู้ส่ง)
+- `profiles` (ผู้รับ)
+- `chat_tags` (tags สำหรับจัดหมวดหมู่ผู้ใช้)
+
+---
+
+#### 💰 **ระบบชำระเงิน (Payment System)**
+**ตารางที่เกี่ยวข้อง:** `payments`
+
+**คุณสมบัติ:**
+- รองรับ QR Code
+- ติดตามสถานะการชำระเงิน (`pending`, `completed`)
+
+**เชื่อมโยงกับ:**
+- `appointments` (ชำระเงินสำหรับนัดหมายไหน)
+- `profiles` (ใครชำระ)
+
+---
+
+#### 🏢 **โครงสร้างองค์กร (Organizational Structure)**
+**ตารางที่เกี่ยวข้อง:**
+- `branches` - สาขาโรงพยาบาล
+- `departments` - แผนกต่างๆ (ศัลยกรรม, กุมารเวชศาสตร์, ฯลฯ)
+- `branch_departments` - ตารางเชื่อม (Many-to-Many)
+
+**โครงสร้าง:**
+```
+Hospital (โรงพยาบาล)
+├── Branch 1 (สาขา 1)
+│   ├── Department A (แผนก A)
+│   │   ├── Doctor 1
+│   │   └── Doctor 2
+│   └── Department B (แผนก B)
+│       └── Doctor 3
+└── Branch 2 (สาขา 2)
+    └── Department C (แผนก C)
+        └── Doctor 4
+```
+
+---
+
+### **3️⃣ สรุปตาราง: ส่วนไหนใช้ตารางอะไรบ้าง**
+
+| 🎯 ส่วนของระบบ | 📊 ตารางที่เกี่ยวข้อง | 🔗 ความสัมพันธ์กับตารางอื่น |
+|----------------|---------------------|---------------------------|
+| **👤 ผู้ป่วย/คนไข้** | `profiles` | → `appointments`, `notifications`, `admin_messages`, `payments` |
+| **👨‍⚕️ แพทย์** | `doctors` | → `appointments`, `appointment_queue_counters`, `branches`, `departments` |
+| **👨‍💼 Admin** | `admins`, `profiles` | → `admin_messages` |
+| **📅 ระบบจองคิว** | `appointments`, `appointment_files`, `appointment_queue_counters` | → `profiles`, `doctors`, `branches`, `departments` |
+| **🔔 ระบบแจ้งเตือน SMS** | `appointment_notifications` | → `appointments` |
+| **🔔 ระบบแจ้งเตือนในแอป** | `notifications` | → `profiles` |
+| **💬 ระบบข้อความ Admin** | `admin_messages`, `chat_tags` | → `admins`, `profiles` |
+| **💰 ระบบชำระเงิน** | `payments` | → `appointments`, `profiles` |
+| **🏢 โครงสร้างองค์กร** | `branches`, `departments`, `branch_departments` | → `doctors`, `appointments` |
+
+---
+
+## 📐 Entity Relationship Diagram (ERD) - รายละเอียดทั้งหมด
+
 ```mermaid
 erDiagram
     %% Core User Tables
     profiles ||--o{ appointments : "books"
     profiles ||--o{ admin_messages : "receives"
+    profiles ||--o{ chat_tags : "has"
     profiles ||--o{ notifications : "receives"
     profiles ||--o{ payments : "makes"
     profiles ||--o| admins : "can be"
@@ -185,6 +333,17 @@ erDiagram
         string payment_status
         text qr_code_data
     }
+
+    chat_tags {
+        uuid id PK
+        uuid user_id FK
+        string tag_name
+        string tag_color
+        string tag_category
+        uuid created_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
 ```
 
 ## ความสัมพันธ์หลักของระบบ (Key Relationships)
@@ -193,6 +352,7 @@ erDiagram
 - **profiles** (users) สามารถเป็น **admins** ได้ (one-to-one optional)
 - **profiles** สามารถจอง **appointments** ได้หลายครั้ง (one-to-many)
 - **profiles** สามารถรับ **notifications** และ **admin_messages** (one-to-many)
+- **profiles** สามารถมี **chat_tags** ได้หลายอัน (one-to-many)
 
 ### 2. Medical Service Structure
 - **branches** (สาขา) มีหลาย **departments** (แผนก)
@@ -214,6 +374,7 @@ erDiagram
 
 ### 5. Communication
 - **admin_messages**: ข้อความระหว่าง admin และ user (มี auto-expire 60 วัน)
+- **chat_tags**: tags สำหรับจัดหมวดหมู่ผู้ใช้ในแชท admin (สถานะการนัด, ความต้องการพิเศษ, ประเภทลูกค้า)
 - **notifications**: การแจ้งเตือนทั่วไปในระบบ
 
 ## สถานะการนัดหมาย (Appointment Status Enum)
@@ -227,6 +388,12 @@ erDiagram
 - `3_days` - แจ้งเตือน 3 วันก่อนนัด
 - `1_day` - แจ้งเตือน 1 วันก่อนนัด
 - `6_hours` - แจ้งเตือน 6 ชั่วโมงก่อนนัด
+
+## Chat Tag Categories
+- `status` - สถานะการนัด (รอดำเนินการ, รอการชำระเงิน, รอยืนยันเอกสาร, ยืนยันนัดแล้ว, เสร็จสิ้น, ยกเลิก)
+- `special_need` - ความต้องการพิเศษ (ต้องการหมอหญิง, แพ้ยา, ต่างชาติ, ต้องการรถเข็น, มาพร้อมเด็ก, ผู้สูงอายุ)
+- `customer_type` - ประเภทลูกค้า (VIP, ลูกค้าใหม่, ลูกค้าประจำ, ติดต่อบ่อย, ต้องติดตาม)
+- `other` - อื่นๆ (สำหรับ tags ที่ไม่อยู่ในหมวดที่กำหนด)
 
 ## Important Data Types
 - **UUID**: ids ส่วนใหญ่ (profiles, doctors, appointments, etc.)

@@ -1,17 +1,15 @@
 /**
- * API Route: Send Appointment Notification Email
+ * API Route: Send Appointment Notification (Email + SMS + In-App)
  * POST /api/appointments/send-notification
- * Sends email notifications for appointment status changes
+ * Sends Email, SMS, and in-app notifications for appointment status changes
  */
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {
-  sendAppointmentApprovedEmail,
-  sendAppointmentRejectedEmail,
-  formatEmailDate,
-  formatEmailTime
-} from '@/lib/email/emailService'
+  createAppointmentApprovedNotification,
+  createAppointmentRejectedNotification
+} from '@/lib/notifications'
 
 // Use service role key to bypass RLS and access all data
 const supabase = createClient(
@@ -50,9 +48,6 @@ export async function POST(request) {
         secondary_date,
         secondary_time,
         approved_option,
-        primary_flexible,
-        secondary_flexible,
-        symptoms,
         status,
         doctor_id,
         department_id,
@@ -69,112 +64,77 @@ export async function POST(request) {
       )
     }
 
-    // Fetch related data separately
-    const { data: profile } = await supabase
+    // Fetch user profile (with email, phone, notification preferences)
+    const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, full_name')
+      .select('id, email, full_name, phone, notification_preferences')
       .eq('id', appointment.user_id)
       .single()
 
+    if (profileError || !userProfile) {
+      console.error('Error fetching user profile:', profileError)
+      return NextResponse.json(
+        { success: false, error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Fetch doctor, branch, department names for notification content
     const { data: doctor } = await supabase
       .from('doctors')
-      .select('id, contact_name, contact_email, specialty')
+      .select('name')
       .eq('id', appointment.doctor_id)
-      .single()
-
-    const { data: department } = await supabase
-      .from('departments')
-      .select('id, name')
-      .eq('id', appointment.department_id)
       .single()
 
     const { data: branch } = await supabase
       .from('branches')
-      .select('id, name')
+      .select('name')
       .eq('id', appointment.branch_id)
       .single()
 
-    // Reconstruct appointment object
-    appointment.profiles = profile
-    appointment.doctors = doctor
-    appointment.departments = department
-    appointment.branches = branch
+    let departmentName = null
+    if (appointment.department_id) {
+      const { data: department } = await supabase
+        .from('departments')
+        .select('name')
+        .eq('id', appointment.department_id)
+        .single()
+      departmentName = department?.name
+    }
 
-    // Determine language (default to Thai)
-    const language = 'th' // Can be enhanced to check user preferences
+    // Attach names to appointment object for notification
+    const appointmentWithDetails = {
+      ...appointment,
+      doctor_name: doctor?.name,
+      branch_name: branch?.name,
+      department_name: departmentName
+    }
 
-    // Prepare common data
-    const patientName = appointment.profiles?.full_name || 'Patient'
-    const patientEmail = appointment.profiles?.email
-    const doctorName = appointment.doctors?.contact_name || 'Doctor'
-    const specialty = appointment.doctors?.specialty || ''
-    const departmentName = appointment.departments?.name || 'Department'
-    const branchName = appointment.branches?.name || 'Branch'
+    let notificationResult
 
-    // Format dates and times
-    const primaryDate = formatEmailDate(appointment.primary_date, language === 'th' ? 'th-TH' : 'en-US')
-    const primaryTime = formatEmailTime(appointment.primary_time, language === 'th' ? 'th-TH' : 'en-US')
-    const secondaryDate = appointment.secondary_date
-      ? formatEmailDate(appointment.secondary_date, language === 'th' ? 'th-TH' : 'en-US')
-      : null
-    const secondaryTime = appointment.secondary_time
-      ? formatEmailTime(appointment.secondary_time, language === 'th' ? 'th-TH' : 'en-US')
-      : null
-
-    // Validate patient email
-    if (!patientEmail) {
-      console.error('Patient email not found for appointment:', appointmentId)
-      return NextResponse.json(
-        { success: false, error: 'Patient email not found' },
-        { status: 400 }
+    if (action === 'approved') {
+      // Send in-app notification + Email + SMS
+      notificationResult = await createAppointmentApprovedNotification(
+        appointmentWithDetails,
+        userProfile,
+        supabase
+      )
+    } else if (action === 'rejected') {
+      // Send in-app notification + Email + SMS
+      notificationResult = await createAppointmentRejectedNotification(
+        appointmentWithDetails,
+        rejectionReason || null,
+        userProfile,
+        supabase
       )
     }
 
-    let emailResult
-
-    if (action === 'approved') {
-      // Determine which date was approved
-      const approvedSlot = appointment.approved_option || 'primary'
-      const appointmentDate = approvedSlot === 'primary' ? primaryDate : secondaryDate
-      const appointmentTime = approvedSlot === 'primary' ? primaryTime : secondaryTime
-
-      // Send approved email
-      emailResult = await sendAppointmentApprovedEmail({
-        to: patientEmail,
-        patientName,
-        doctorName,
-        specialty,
-        departmentName,
-        branchName,
-        appointmentDate,
-        appointmentTime,
-        approvedSlot,
-        language
-      })
-    } else if (action === 'rejected') {
-      // Send rejected email
-      emailResult = await sendAppointmentRejectedEmail({
-        to: patientEmail,
-        patientName,
-        doctorName,
-        specialty,
-        departmentName,
-        branchName,
-        primaryDate,
-        primaryTime,
-        secondaryDate,
-        secondaryTime,
-        rejectionReason: rejectionReason || null,
-        language
-      })
-    }
-
-    if (!emailResult.success) {
+    if (!notificationResult || !notificationResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to send email',
-          details: emailResult.error
+          error: 'Failed to send notification',
+          details: notificationResult?.error
         },
         { status: 500 }
       )
@@ -182,8 +142,8 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: `Email sent successfully to ${patientEmail}`,
-      data: emailResult.data
+      message: `Notification (in-app + Email + SMS) sent successfully to ${userProfile.email}`,
+      data: notificationResult.data
     })
   } catch (error) {
     console.error('Error in send-notification API:', error)

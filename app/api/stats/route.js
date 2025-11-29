@@ -6,14 +6,18 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Create client with service role key for admin access
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+// Disable caching for this API route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET() {
   try {
+    // Create client with service role key for admin access (inside function to avoid caching)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+
     // Count doctors
     const { count: doctorCount, error: doctorError } = await supabase
       .from('doctors')
@@ -35,29 +39,20 @@ export async function GET() {
 
     if (adminError) throw adminError
 
-    // Get today's appointments count (approved appointments where approved date = today)
+    // Get today's appointments count (appointments CREATED today, regardless of appointment date)
     // Use Thailand timezone (UTC+7) to get the correct local date
     const today = new Date()
-    const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }) // en-CA gives YYYY-MM-DD format
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    startOfToday.setHours(0, 0, 0, 0)
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    endOfToday.setHours(23, 59, 59, 999)
 
-    // Query all approved appointments
-    const { data: approvedAppointments, error: appointmentError } = await supabase
+    // Count appointments created today (based on created_at timestamp)
+    const { count: appointmentCount, error: appointmentError } = await supabase
       .from('appointments')
-      .select('id, status, approved_option, primary_date, secondary_date')
-      .eq('status', 'approved')
-
-    // Filter appointments where the approved date matches today
-    let appointmentCount = 0
-    if (!appointmentError && approvedAppointments) {
-      appointmentCount = approvedAppointments.filter(apt => {
-        if (apt.approved_option === 'primary') {
-          return apt.primary_date === todayStr
-        } else if (apt.approved_option === 'secondary') {
-          return apt.secondary_date === todayStr
-        }
-        return false
-      }).length
-    }
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
 
     // Get this month's appointments (based on created_at)
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -79,7 +74,7 @@ export async function GET() {
         doctors: doctorCount || 0,
         users: userCount || 0,
         admins: adminCount || 0,
-        appointmentsToday: appointmentCount,
+        appointmentsToday: appointmentCount || 0,
         appointmentsThisMonth: monthlyCount,
       },
       timestamp: new Date().toISOString(),

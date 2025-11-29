@@ -37,7 +37,8 @@
   "header": {
     "appointments": "내 예약",
     "notifications": "알림",
-    "searchPlaceholder": "의사, 전문 분야 검색..."
+    "searchPlaceholder": "의사, 전문 분야 검색...",
+    "quickBook": "빠른 예약"
   },
   "footer": {
     "aboutUs": "헬스 큐는 전국 온라인 병원 예약 시스템입니다. 의사 및 전문가와의 예약을 쉽게 만듭니다.",
@@ -54,6 +55,17 @@
     "saturdayToSunday": "토요일 - 일요일",
     "available24Hours": "24시간 온라인 예약 가능",
     "allRightsReserved": "모든 권리 보유"
+  },
+  "carousel": {
+    "slide1": "고급 의료 서비스",
+    "slide1Title": "귀하의 건강이 우선입니다",
+    "slide1Description": "현대적인 장비와 경험 많은 전문가의 종합 의료 서비스",
+    "slide2": "간편한 예약",
+    "slide2Title": "언제 어디서나 예약",
+    "slide2Description": "클릭 몇 번으로 24시간 온라인 의료 예약",
+    "slide3": "전문 의료팀",
+    "slide3Title": "우리의 전문성을 믿으세요",
+    "slide3Description": "인증받은 의사와 의료 전문가가 귀하의 건강을 책임집니다"
   },
   "dashboard": {
     "title": "대시보드",
@@ -94,6 +106,8 @@
     "add": "장바구니에 추가",
     "healthArticles": "건강 기사",
     "readMore": "더 읽기",
+    "medicalCenters": "의료 센터 및 클리닉",
+    "medicalCentersDescription": "전문 의료 센터와 클리닉의 종합 의료 서비스",
     "centersAndClinics": "의료 센터 및 클리닉",
     "aboutCenter": "센터 소개",
     "treatmentServices": "치료 및 서비스",
@@ -145,7 +159,26 @@
   "search": {
     "searching": "검색 중...",
     "noResults": "결과를 찾을 수 없습니다",
-    "bookNow": "지금 예약"
+    "bookNow": "지금 예약",
+    "branch": "지점"
+  },
+  "doctors": {
+    "title": "의사 찾기",
+    "searchDoctor": "의사, 진료과, 지점 검색...",
+    "showing": "표시 중",
+    "results": "결과",
+    "filterBy": "필터링",
+    "allBranches": "모든 지점",
+    "allDepartments": "모든 진료과",
+    "noDoctorsFound": "의사를 찾을 수 없습니다",
+    "makeAppointment": "예약하기",
+    "details": "세부정보"
+  },
+  "doctorDetail": {
+    "backToDoctors": "의사 목록으로 돌아가기",
+    "centerAndClinic": "의료 센터 및 클리닉",
+    "doctorNotFound": "의사를 찾을 수 없습니다",
+    "backToDoctorsList": "의사 목록으로 돌아가기"
   },
   "chatbot": {
     "title": "의료 도우미",
@@ -184,8 +217,6 @@
     "or": "또는",
     "noAccount": "계정이 없으신가요?",
     "register": "회원가입",
-    "infoTitle": "ℹ️ 사용자 안내",
-    "infoDescription": "시스템이 자동으로 권한(사용자/관리자/의사)을 확인하고 적절한 페이지로 안내합니다",
     "loginFailed": "로그인 실패",
     "googleLoginFailed": "Google 로그인 실패",
     "checking": "확인 중..."
@@ -244,6 +275,8 @@
     "treatmentFiles": "치료 파일",
     "downloadFile": "파일 다운로드",
     "downloadTreatmentFile": "치료 파일 다운로드",
+    "notes": "비고",
+    "cancel": "취소",
     "confirmCancel": "이 예약을 취소하시겠습니까?",
     "cancelSuccess": "예약이 성공적으로 취소되었습니다",
     "status": {
@@ -263,8 +296,18 @@
     "fullName": "성명",
     "email": "이메일",
     "phone": "전화번호",
+    "gender": "성별",
+    "selectGender": "성별 선택",
+    "male": "남성",
+    "female": "여성",
+    "other": "기타",
     "dateOfBirth": "생년월일",
-    "address": "주소",
+    "idCard": "ID 카드 번호",
+    "idCardPlaceholder": "13자리 ID 카드 번호 입력",
+    "idCardHint": "태국 시민용 (13자리)",
+    "passport": "여권 번호",
+    "passportPlaceholder": "여권 번호 입력",
+    "passportHint": "외국인용",
     "allergies": "알레르기",
     "allergiesPlaceholder": "알레르기를 입력하세요",
     "emergencyContact": "긴급 연락처",
@@ -293,6 +336,13 @@
     "notificationsSaved": "알림 설정이 저장되었습니다",
     "emailChangeError": "이메일을 변경할 수 없습니다",
     "emailChangeSent": "새 이메일로 확인 링크를 보냈습니다. 이메일을 확인해주세요",
-    "emailChangeWarning": "이메일을 변경하면 새 이메일로 확인 링크가 전송됩니다"
+    "emailChangeWarning": "이메일 변경 시 새 이메일로 OTP 인증이 필요합니다",
+    "verificationCodeSent": "새 이메일로 인증 코드가 전송되었습니다",
+    "enterVerificationCode": "이메일에서 인증 코드를 입력하세요",
+    "verificationCodeSentTo": "인증 코드 전송:",
+    "verificationCodePlaceholder": "6자리 코드 입력",
+    "verify": "확인",
+    "cancelEmailChange": "이메일 변경 취소",
+    "emailChanged": "이메일이 성공적으로 변경되었습니다"
   }
 }

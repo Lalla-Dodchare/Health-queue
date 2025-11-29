@@ -21,8 +21,13 @@ export default function AdminDashboard() {
     daily: [],
     branches: [],
     departments: [],
-    successRate: { rate: 0, approved: 0, total: 0 },
-    cancellationRate: { rate: 0, cancelled: 0, total: 0 }
+    statusDistribution: {
+      pending: { count: 0, rate: 0 },
+      approved: { count: 0, rate: 0 },
+      completed: { count: 0, rate: 0 },
+      cancelled: { count: 0, rate: 0 },
+      total: 0
+    }
   })
 
   useEffect(() => {
@@ -170,9 +175,11 @@ export default function AdminDashboard() {
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'จอง: ' + chartData.successRate.rate + '%', value: chartData.successRate.approved },
-                      { name: 'หยกเลิก: ' + chartData.cancellationRate.rate + '%', value: chartData.cancellationRate.cancelled }
-                    ]}
+                      { name: `รออนุมัติ: ${chartData.statusDistribution.pending.rate}%`, value: chartData.statusDistribution.pending.count },
+                      { name: `อนุมัติแล้ว: ${chartData.statusDistribution.approved.rate}%`, value: chartData.statusDistribution.approved.count },
+                      { name: `เสร็จสิ้น: ${chartData.statusDistribution.completed.rate}%`, value: chartData.statusDistribution.completed.count },
+                      { name: `ยกเลิก: ${chartData.statusDistribution.cancelled.rate}%`, value: chartData.statusDistribution.cancelled.count }
+                    ].filter(item => item.value > 0)}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -180,8 +187,10 @@ export default function AdminDashboard() {
                     outerRadius={100}
                     dataKey="value"
                   >
+                    <Cell fill="#f59e0b" />
                     <Cell fill="#3b82f6" />
                     <Cell fill="#10b981" />
+                    <Cell fill="#ef4444" />
                   </Pie>
                   <Tooltip />
                 </PieChart>

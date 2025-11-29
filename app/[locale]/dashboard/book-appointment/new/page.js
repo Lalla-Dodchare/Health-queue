@@ -723,8 +723,8 @@ export default function NewBookingPage() {
                 <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-900">
                   {language === 'th'
-                    ? 'แอดมินจะติดต่อแพทย์เพื่อเช็คความพร้อม และจะอนุมัติวันที่ที่แพทย์สะดวก (วันหลัก หรือ วันรอง)'
-                    : 'Admin will contact the doctor to check availability and approve the date that works (primary or secondary).'}
+                    ? 'แอดมินจะติดต่อแพทย์เพื่อเช็คความพร้อม และจะอนุมัติวันที่ที่แพทย์สะดวก (วันหลัก หรือ วันรอง) หรืออาจเป็นเวลาอื่นที่แตกต่างจากที่เลือกไว้ ขึ้นอยู่กับความพร้อมของโรงพยาบาล'
+                    : 'Admin will contact the doctor to check availability and approve a suitable date (primary, secondary, or another time depending on hospital availability).'}
                 </p>
               </div>
             </div>

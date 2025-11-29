@@ -30,13 +30,20 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
 
+  // Email change verification state
+  const [emailChangeStep, setEmailChangeStep] = useState(null) // null, 'pending', 'verify'
+  const [verificationCode, setVerificationCode] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+
   // Form state
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     phone: '',
+    gender: '',
     date_of_birth: '',
-    address: '',
+    id_card: '',
+    passport_number: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
     allergies: '',
@@ -85,17 +92,21 @@ export default function ProfilePage() {
             full_name: userData.full_name || currentUser.name || '',
             email: userData.email || currentUser.email || '',
             phone: userData.phone || currentUser.phone || '',
+            gender: userData.gender || '',
             date_of_birth: userData.date_of_birth || '',
-            address: userData.address || '',
+            id_card: userData.id_card || '',
+            passport_number: userData.passport_number || '',
             emergency_contact_name: userData.emergency_contact_name || '',
             emergency_contact_phone: userData.emergency_contact_phone || '',
             allergies: userData.allergies || '',
           })
 
-          // Load notification preferences
-          if (userData.notification_preferences) {
-            setNotifications(userData.notification_preferences)
-          }
+          // Load notification preferences (merge with defaults)
+          setNotifications({
+            email_notifications: userData.notification_preferences?.email_notifications ?? true,
+            sms_notifications: userData.notification_preferences?.sms_notifications ?? false,
+            appointment_reminders: userData.notification_preferences?.appointment_reminders ?? true,
+          })
         } else {
           console.warn('⚠️ No data from Supabase, using localStorage data')
           console.error('❌ Supabase error:', error)
@@ -105,8 +116,10 @@ export default function ProfilePage() {
             full_name: currentUser.name || '',
             email: currentUser.email || '',
             phone: currentUser.phone || '',
+            gender: '',
             date_of_birth: currentUser.date_of_birth || '',
-            address: currentUser.address || '',
+            id_card: '',
+            passport_number: '',
             emergency_contact_name: '',
             emergency_contact_phone: '',
             allergies: '',
@@ -120,8 +133,10 @@ export default function ProfilePage() {
           full_name: currentUser.name || '',
           email: currentUser.email || '',
           phone: currentUser.phone || '',
+          gender: '',
           date_of_birth: '',
-          address: '',
+          id_card: '',
+          passport_number: '',
           emergency_contact_name: '',
           emergency_contact_phone: '',
           allergies: '',
@@ -156,6 +171,89 @@ export default function ProfilePage() {
     }))
   }
 
+  const handleRequestEmailChange = async () => {
+    // Step 1: Send OTP to new email
+    setSaving(true)
+    setSaveMessage('')
+
+    try {
+      const response = await fetch('/api/profile/request-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          newEmail: formData.email,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification code')
+      }
+
+      setNewEmail(formData.email)
+      setEmailChangeStep('verify')
+      setSaveMessage(t('profile.verificationCodeSent'))
+
+    } catch (error) {
+      console.error('❌ Error requesting email change:', error)
+      setSaveMessage(error.message || t('common.error'))
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveMessage(''), 5000)
+    }
+  }
+
+  const handleVerifyEmailChange = async () => {
+    // Step 2: Verify OTP and change email
+    setSaving(true)
+    setSaveMessage('')
+
+    try {
+      const response = await fetch('/api/profile/verify-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          newEmail: newEmail,
+          code: verificationCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid verification code')
+      }
+
+      // Update email in Supabase Auth
+      const { error: emailError } = await supabase.auth.updateUser({
+        email: newEmail
+      })
+
+      if (emailError) {
+        throw new Error(emailError.message)
+      }
+
+      setSaveMessage(t('profile.emailChanged'))
+      setEmailChangeStep(null)
+      setVerificationCode('')
+      setNewEmail('')
+
+      // Update user object
+      const updatedUser = { ...user, email: newEmail }
+      setUser(updatedUser)
+
+    } catch (error) {
+      console.error('❌ Error verifying email change:', error)
+      setSaveMessage(error.message || t('common.error'))
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveMessage(''), 5000)
+    }
+  }
+
   const handleSaveProfile = async () => {
     setSaving(true)
     setSaveMessage('')
@@ -164,19 +262,10 @@ export default function ProfilePage() {
       // Check if email changed
       const emailChanged = formData.email !== user.email
 
-      // If email changed, update Supabase Auth email
+      // If email changed, start verification process
       if (emailChanged) {
-        const { data, error: emailError } = await supabase.auth.updateUser({
-          email: formData.email
-        })
-
-        if (emailError) {
-          console.error('❌ Email update error:', emailError)
-          throw new Error(t('profile.emailChangeError') + ': ' + emailError.message)
-        }
-
-        console.log('✅ Email change initiated, confirmation sent to new email')
-        setSaveMessage(t('profile.emailChangeSent'))
+        await handleRequestEmailChange()
+        return // Don't save other fields yet
       }
 
       // Update profile in Supabase profiles table
@@ -186,8 +275,10 @@ export default function ProfilePage() {
           full_name: formData.full_name,
           email: formData.email,
           phone: formData.phone,
+          gender: formData.gender,
           date_of_birth: formData.date_of_birth,
-          address: formData.address,
+          id_card: formData.id_card,
+          passport_number: formData.passport_number,
           allergies: formData.allergies,
           emergency_contact_name: formData.emergency_contact_name,
           emergency_contact_phone: formData.emergency_contact_phone,
@@ -200,17 +291,12 @@ export default function ProfilePage() {
       }
 
       console.log('✅ Profile saved successfully')
-
-      if (!emailChanged) {
-        setSaveMessage(t('profile.saved') || 'บันทึกข้อมูลสำเร็จ')
-      }
-
+      setSaveMessage(t('profile.saved') || 'บันทึกข้อมูลสำเร็จ')
       setEditing(false)
 
       // Update local user state
       const updatedUser = { ...user, ...formData }
       setUser(updatedUser)
-      localStorage.setItem('user', JSON.stringify(updatedUser))
 
     } catch (error) {
       console.error('❌ Error saving profile:', error)
@@ -366,13 +452,53 @@ export default function ProfilePage() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                disabled={!editing}
+                disabled={!editing || emailChangeStep === 'verify'}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
-              {editing && (
+              {editing && !emailChangeStep && (
                 <p className="text-xs text-amber-600 mt-1">
                   ⚠️ {t('profile.emailChangeWarning')}
                 </p>
+              )}
+
+              {/* Email Verification Step */}
+              {emailChangeStep === 'verify' && (
+                <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">
+                    {t('profile.enterVerificationCode')}
+                  </p>
+                  <p className="text-xs text-blue-700 mb-3">
+                    {t('profile.verificationCodeSentTo')} <strong>{newEmail}</strong>
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      placeholder={t('profile.verificationCodePlaceholder')}
+                      maxLength="6"
+                      className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handleVerifyEmailChange}
+                      disabled={saving || verificationCode.length !== 6}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t('profile.verify')}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEmailChangeStep(null)
+                      setVerificationCode('')
+                      setNewEmail('')
+                      setFormData({ ...formData, email: user.email })
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:underline"
+                  >
+                    {t('profile.cancelEmailChange')}
+                  </button>
+                </div>
               )}
             </div>
 
@@ -392,6 +518,24 @@ export default function ProfilePage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('profile.gender')}
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleInputChange}
+                disabled={!editing}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              >
+                <option value="">{t('profile.selectGender')}</option>
+                <option value="male">{t('profile.male')}</option>
+                <option value="female">{t('profile.female')}</option>
+                <option value="other">{t('profile.other')}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 {t('profile.dateOfBirth')}
               </label>
               <input
@@ -404,18 +548,37 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {t('profile.address')}
+                {t('profile.idCard')}
               </label>
-              <textarea
-                name="address"
-                value={formData.address}
+              <input
+                type="text"
+                name="id_card"
+                value={formData.id_card}
                 onChange={handleInputChange}
                 disabled={!editing}
-                rows={3}
+                placeholder={t('profile.idCardPlaceholder')}
+                maxLength="13"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
+              <p className="text-xs text-gray-500 mt-1">{t('profile.idCardHint')}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('profile.passport')}
+              </label>
+              <input
+                type="text"
+                name="passport_number"
+                value={formData.passport_number}
+                onChange={handleInputChange}
+                disabled={!editing}
+                placeholder={t('profile.passportPlaceholder')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">{t('profile.passportHint')}</p>
             </div>
 
             <div className="md:col-span-2">

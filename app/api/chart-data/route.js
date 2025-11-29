@@ -20,15 +20,18 @@ export async function GET() {
 
     if (appointmentsError) throw appointmentsError
 
-    // Calculate success and cancellation rates
+    // Calculate status distribution
     const totalAppointments = appointments.length
+    const pendingAppointments = appointments.filter(apt => apt.status === 'pending').length
     const approvedAppointments = appointments.filter(apt => apt.status === 'approved').length
+    const completedAppointments = appointments.filter(apt => apt.status === 'completed').length
     const cancelledAppointments = appointments.filter(apt => apt.status === 'cancelled').length
     const rejectedAppointments = appointments.filter(apt => apt.status === 'rejected').length
-    const pendingAppointments = appointments.filter(apt => apt.status === 'pending').length
 
-    const successRate = totalAppointments > 0 ? ((approvedAppointments / totalAppointments) * 100).toFixed(1) : 0
-    const cancellationRate = totalAppointments > 0 ? (((cancelledAppointments + rejectedAppointments) / totalAppointments) * 100).toFixed(1) : 0
+    const pendingRate = totalAppointments > 0 ? ((pendingAppointments / totalAppointments) * 100).toFixed(1) : 0
+    const approvedRate = totalAppointments > 0 ? ((approvedAppointments / totalAppointments) * 100).toFixed(1) : 0
+    const completedRate = totalAppointments > 0 ? ((completedAppointments / totalAppointments) * 100).toFixed(1) : 0
+    const cancelledRate = totalAppointments > 0 ? (((cancelledAppointments + rejectedAppointments) / totalAppointments) * 100).toFixed(1) : 0
 
     // Group by day
     const appointmentsByDay = {}
@@ -84,14 +87,23 @@ export async function GET() {
         daily: dailyData,
         branches: branchData,
         departments: departmentData,
-        successRate: {
-          rate: parseFloat(successRate),
-          approved: approvedAppointments,
-          total: totalAppointments
-        },
-        cancellationRate: {
-          rate: parseFloat(cancellationRate),
-          cancelled: cancelledAppointments + rejectedAppointments,
+        statusDistribution: {
+          pending: {
+            count: pendingAppointments,
+            rate: parseFloat(pendingRate)
+          },
+          approved: {
+            count: approvedAppointments,
+            rate: parseFloat(approvedRate)
+          },
+          completed: {
+            count: completedAppointments,
+            rate: parseFloat(completedRate)
+          },
+          cancelled: {
+            count: cancelledAppointments + rejectedAppointments,
+            rate: parseFloat(cancelledRate)
+          },
           total: totalAppointments
         }
       }

@@ -8,22 +8,42 @@
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from 'next/navigation'
 
-export const useTranslation = () => {
-  const translations = useTranslations()
+export const useTranslation = (namespace = null) => {
+  // Import all messages for manual lookup if needed
   const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
 
-  // Fallback translation function
+  // Load messages dynamically
+  const messages = require(`@/messages/${locale}.json`)
+
+  // Fallback translation function with nested key support
   const t = (key) => {
     try {
-      const translated = translations(key)
-      // If translation returns the key itself, it means it's missing
-      if (translated === key) {
+      // Handle nested keys like 'profile.gender' manually
+      if (key && key.includes('.')) {
+        const parts = key.split('.')
+        let value = messages
+
+        for (const part of parts) {
+          value = value?.[part]
+          if (value === undefined) {
+            console.warn(`Missing translation for key: ${key}`)
+            return key
+          }
+        }
+
+        return value
+      }
+
+      // For non-nested keys, try to get from messages
+      const value = messages[key]
+      if (value === undefined) {
         console.warn(`Missing translation for key: ${key}`)
         return key
       }
-      return translated
+
+      return value
     } catch (error) {
       console.warn(`Translation error for key: ${key}`, error)
       return key

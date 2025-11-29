@@ -1,15 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter as useNextRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { loginWithEmail, loginWithGoogle, getCurrentUser, getRedirectPath } from '@/lib/auth'
 import { useTranslation } from '@/hooks/useTranslation'
-import { LogIn } from 'lucide-react'
+import { LogIn, Globe } from 'lucide-react'
+
+const LANGUAGES = [
+  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+]
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router = useNextRouter()
+  const pathname = usePathname()
   const { t } = useTranslation()
+  const [showLangMenu, setShowLangMenu] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -70,6 +82,16 @@ export default function LoginPage() {
     }
   }
 
+  // Language switching logic
+  const currentLocale = pathname.split('/')[1] || 'th'
+  const currentLang = LANGUAGES.find(l => l.code === currentLocale) || LANGUAGES[0]
+
+  const changeLanguage = (langCode) => {
+    const newPath = pathname.replace(`/${currentLocale}`, `/${langCode}`)
+    router.push(newPath)
+    setShowLangMenu(false)
+  }
+
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -79,7 +101,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative">
+      {/* Language Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="relative">
+          <button
+            onClick={() => setShowLangMenu(!showLangMenu)}
+            className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition"
+          >
+            <Globe className="w-5 h-5 text-gray-600" />
+            <span className="text-lg">{currentLang.flag}</span>
+            <span className="text-sm font-medium text-gray-700">{currentLang.name}</span>
+          </button>
+
+          {showLangMenu && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => changeLanguage(lang.code)}
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-100 transition flex items-center gap-3 ${
+                    currentLocale === lang.code ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  <span className="text-lg">{lang.flag}</span>
+                  <span className="text-sm font-medium">{lang.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {/* Header */}
@@ -201,15 +254,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Info */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800 mb-2 font-medium">
-              {t('login.infoTitle')}
-            </p>
-            <p className="text-xs text-blue-700">
-              {t('login.infoDescription')}
-            </p>
-          </div>
         </div>
       </div>
     </div>

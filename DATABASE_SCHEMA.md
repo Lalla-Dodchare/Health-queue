@@ -173,9 +173,88 @@
 
 ## Table: profiles
 
-**Note**: This table is from auth schema, not included in CSV but exists in system
-- Links to auth.users
-- Contains user profile information
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | null | FK to auth.users.id |
+| email | text | YES | null | User email |
+| full_name | text | YES | null | ชื่อ-นามสกุล |
+| phone | text | YES | null | เบอร์โทร |
+| gender | text | YES | null | เพศ |
+| date_of_birth | date | YES | null | วันเกิด |
+| id_card | text | YES | null | เลขบัตรประชาชน (สำหรับคนไทย) |
+| passport_number | text | YES | null | เลขพาสปอร์ต (สำหรับชาวต่างชาติ) |
+| allergies | text | YES | null | ประวัติแพ้ยา |
+| is_foreign | boolean | YES | false | เป็นชาวต่างชาติหรือไม่ |
+| preferred_language | text | YES | 'th' | ภาษาที่ต้องการ (th, en, etc.) |
+| notification_preferences | jsonb | YES | null | ตั้งค่าการแจ้งเตือน (email, SMS) |
+| created_at | timestamp | YES | now() | |
+| updated_at | timestamp | YES | now() | |
+
+**Constraints:**
+- PRIMARY KEY (id)
+- FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+- CHECK: Either `id_card` OR `passport_number` must exist (one required, not both)
+
+**Identification Fields:**
+1. **คนไทย**: ใช้ `id_card` (เลขบัตรประชาชน 13 หลัก)
+2. **ชาวต่างชาติ**: ใช้ `passport_number` (เลขพาสปอร์ต)
+
+**Note**:
+- ลบ columns `address` และ `passport_id` ออกแล้ว (cleanup_profiles_columns.sql)
+- ใช้ `passport_number` เป็น field หลักสำหรับพาสปอร์ต
+- ผู้ใช้ต้องมีอย่างใดอย่างหนึ่ง: `id_card` **หรือ** `passport_number`
+- เพิ่ม `is_foreign`, `preferred_language`, `notification_preferences` สำหรับระบบหลายภาษาและการแจ้งเตือน
+
+## Table: canned_responses
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| title | text | NO | null | ชื่อข้อความสำเร็จรูป |
+| message | text | NO | null | เนื้อหาข้อความ |
+| category | text | YES | 'general' | หมวดหมู่ (greeting, inquiry, confirmation, document_request, general, other) |
+| shortcut | text | YES | null | รหัสลัด (เช่น /hello) |
+| usage_count | integer | YES | 0 | จำนวนครั้งที่ใช้ |
+| created_at | timestamp | YES | now() | |
+| updated_at | timestamp | YES | now() | |
+
+**Purpose:** Store pre-written messages for admin chat (Canned Responses)
+
+## Table: chat_tags
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | gen_random_uuid() | Primary key |
+| message_id | uuid | NO | null | FK to admin_messages.id |
+| tag | text | NO | null | Tag name (urgent, follow_up, resolved, etc.) |
+| created_at | timestamp | YES | now() | |
+
+**Constraints:**
+- FOREIGN KEY (message_id) REFERENCES admin_messages(id) ON DELETE CASCADE
+- INDEX on message_id for fast lookups
+
+**Purpose:** Tag system for admin chat messages
+
+## Table: otp_verifications
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uuid | NO | uuid_generate_v4() | Primary key |
+| email | text | NO | null | Email address to verify |
+| otp | text | NO | null | 6-digit OTP code |
+| expires_at | timestamptz | NO | null | OTP expiration time (10 minutes) |
+| verified | boolean | YES | false | Whether OTP has been verified |
+| created_at | timestamptz | YES | now() | |
+
+**Constraints:**
+- INDEX on email for fast lookups
+- INDEX on expires_at for cleanup
+
+**RLS Policies:**
+- Service role can manage all OTPs
+- Regular users cannot access this table directly
+
+**Purpose:** Store temporary OTP codes for email verification during user registration
 
 ## Storage Buckets
 
@@ -193,6 +272,13 @@
 5. **admin_messages** has auto-expire after 60 days
 6. **appointment_notifications** tracks SMS reminders sent to users (3 days, 1 day, 6 hours before appointment)
 7. **UNIQUE constraint** on (appointment_id, reminder_type) prevents duplicate SMS sends
+8. **profiles table** - ใช้ `passport_number` แทน `passport_id` (ลบ columns: `address`, `passport_id`)
+9. **canned_responses** - ระบบข้อความสำเร็จรูปสำหรับ admin chat
+10. **chat_tags** - ระบบแท็กสำหรับ admin messages (urgent, follow_up, resolved, etc.)
+11. **otp_verifications** - ระบบยืนยันอีเมลด้วย OTP สำหรับการสมัครสมาชิก (OTP หมดอายุใน 10 นาที)
+12. **profiles.notification_preferences** - เก็บการตั้งค่าการแจ้งเตือนแบบ JSONB (email_notifications, sms_notifications)
+13. **Supabase Auth Trigger** - มี trigger สร้าง profile อัตโนมัติเมื่อมี user ใหม่ใน auth.users
+14. **Registration Flow** - ใช้ `.upsert()` แทน `.insert()` เพื่อหลีกเลี่ยง duplicate key error จาก trigger
 
 ---
 

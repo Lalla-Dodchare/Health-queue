@@ -10,6 +10,18 @@ export default function AdminSettingsPage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  // Settings state
+  const [hospitalName, setHospitalName] = useState('Health Queue Hospital')
+  const [contactEmail, setContactEmail] = useState('contact@healthqueue.com')
+  const [contactPhone, setContactPhone] = useState('02-xxx-xxxx')
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [sessionTimeout, setSessionTimeout] = useState('1')
+  const [emailNotifications, setEmailNotifications] = useState(true)
+  const [newMessageNotifications, setNewMessageNotifications] = useState(true)
+  const [language, setLanguage] = useState('th')
+  const [timezone, setTimezone] = useState('Asia/Bangkok')
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -21,11 +33,61 @@ export default function AdminSettingsPage() {
       }
 
       setUser(currentUser)
+      loadSettings()
       setLoading(false)
     }
 
     checkAuth()
   }, [router])
+
+  // Load settings from localStorage
+  const loadSettings = () => {
+    try {
+      const savedSettings = localStorage.getItem('admin_settings')
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings)
+        setHospitalName(settings.hospitalName || 'Health Queue Hospital')
+        setContactEmail(settings.contactEmail || 'contact@healthqueue.com')
+        setContactPhone(settings.contactPhone || '02-xxx-xxxx')
+        setTwoFactorEnabled(settings.twoFactorEnabled || false)
+        setSessionTimeout(settings.sessionTimeout || '1')
+        setEmailNotifications(settings.emailNotifications !== false)
+        setNewMessageNotifications(settings.newMessageNotifications !== false)
+        setLanguage(settings.language || 'th')
+        setTimezone(settings.timezone || 'Asia/Bangkok')
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error)
+    }
+  }
+
+  // Save settings to localStorage
+  const handleSave = () => {
+    setSaving(true)
+
+    const settings = {
+      hospitalName,
+      contactEmail,
+      contactPhone,
+      twoFactorEnabled,
+      sessionTimeout,
+      emailNotifications,
+      newMessageNotifications,
+      language,
+      timezone,
+      updatedAt: new Date().toISOString()
+    }
+
+    try {
+      localStorage.setItem('admin_settings', JSON.stringify(settings))
+      alert('✅ บันทึกการตั้งค่าเรียบร้อยแล้ว')
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('❌ เกิดข้อผิดพลาดในการบันทึกการตั้งค่า')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -63,7 +125,8 @@ export default function AdminSettingsPage() {
                   </label>
                   <input
                     type="text"
-                    defaultValue="Health Queue Hospital"
+                    value={hospitalName}
+                    onChange={(e) => setHospitalName(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
@@ -74,7 +137,8 @@ export default function AdminSettingsPage() {
                   </label>
                   <input
                     type="email"
-                    defaultValue="contact@healthqueue.com"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
@@ -85,7 +149,8 @@ export default function AdminSettingsPage() {
                   </label>
                   <input
                     type="tel"
-                    defaultValue="02-xxx-xxxx"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
@@ -106,7 +171,12 @@ export default function AdminSettingsPage() {
                     <p className="text-sm text-gray-600">เพิ่มความปลอดภัยด้วย 2FA</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={twoFactorEnabled}
+                      onChange={(e) => setTwoFactorEnabled(e.target.checked)}
+                    />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                   </label>
                 </div>
@@ -116,11 +186,15 @@ export default function AdminSettingsPage() {
                     <p className="font-medium text-gray-900">Session Timeout</p>
                     <p className="text-sm text-gray-600">ออกจากระบบอัตโนมัติเมื่อไม่มีการใช้งาน</p>
                   </div>
-                  <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option>15 นาที</option>
-                    <option>30 นาที</option>
-                    <option selected>1 ชั่วโมง</option>
-                    <option>2 ชั่วโมง</option>
+                  <select
+                    value={sessionTimeout}
+                    onChange={(e) => setSessionTimeout(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="0.25">15 นาที</option>
+                    <option value="0.5">30 นาที</option>
+                    <option value="1">1 ชั่วโมง</option>
+                    <option value="2">2 ชั่วโมง</option>
                   </select>
                 </div>
               </div>
@@ -140,7 +214,12 @@ export default function AdminSettingsPage() {
                     <p className="text-sm text-gray-600">รับการแจ้งเตือนทางอีเมล</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={emailNotifications}
+                      onChange={(e) => setEmailNotifications(e.target.checked)}
+                    />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                   </label>
                 </div>
@@ -151,7 +230,12 @@ export default function AdminSettingsPage() {
                     <p className="text-sm text-gray-600">แจ้งเตือนเมื่อมีข้อความจากผู้ใช้</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={newMessageNotifications}
+                      onChange={(e) => setNewMessageNotifications(e.target.checked)}
+                    />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                   </label>
                 </div>
@@ -170,9 +254,13 @@ export default function AdminSettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     ภาษา
                   </label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option selected>ไทย</option>
-                    <option>English</option>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="th">ไทย</option>
+                    <option value="en">English</option>
                   </select>
                 </div>
 
@@ -180,9 +268,13 @@ export default function AdminSettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     เขตเวลา
                   </label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option selected>Asia/Bangkok (GMT+7)</option>
-                    <option>UTC</option>
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="Asia/Bangkok">Asia/Bangkok (GMT+7)</option>
+                    <option value="UTC">UTC</option>
                   </select>
                 </div>
               </div>
@@ -190,9 +282,13 @@ export default function AdminSettingsPage() {
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <button className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
                 <Save className="w-5 h-5" />
-                บันทึกการตั้งค่า
+                {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
               </button>
             </div>
           </div>

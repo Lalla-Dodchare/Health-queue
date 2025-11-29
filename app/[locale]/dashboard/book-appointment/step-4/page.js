@@ -137,19 +137,66 @@ export default function SelectDateTimePage() {
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return
 
-    // TODO: Save appointment to Supabase
-    // const { data, error } = await supabase.from('appointments').insert([{
-    //   user_id: userId,
-    //   doctor_id: localStorage.getItem('booking_doctor_id'),
-    //   clinic_id: localStorage.getItem('booking_clinic_id'),
-    //   branch_id: localStorage.getItem('booking_branch_id'),
-    //   appointment_date: selectedDate,
-    //   appointment_time: selectedTime,
-    //   status: 'pending'
-    // }])
+    try {
+      // Get user ID from localStorage or session
+      const userId = localStorage.getItem('user_id')
+      if (!userId) {
+        alert('กรุณาเข้าสู่ระบบก่อนทำการจอง')
+        router.push('/login')
+        return
+      }
 
-    alert(t('booking.confirmationMessage'))
-    router.push('/dashboard/appointments')
+      // Format date as YYYY-MM-DD
+      const formattedDate = selectedDate.toISOString().split('T')[0]
+
+      // Prepare appointment data
+      const appointmentData = {
+        userId,
+        doctorId: localStorage.getItem('booking_doctor_id'),
+        branchId: localStorage.getItem('booking_branch_id'),
+        departmentId: localStorage.getItem('booking_clinic_id'), // clinic_id is actually department_id
+        primaryDate: formattedDate,
+        primaryTime: selectedTime,
+        secondaryDate: null, // Can be extended later for secondary slot
+        secondaryTime: null,
+        symptoms: localStorage.getItem('booking_symptoms') || null,
+        notes: localStorage.getItem('booking_notes') || null
+      }
+
+      // Call API to create appointment and send notifications
+      const response = await fetch('/api/appointments/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(appointmentData)
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create appointment')
+      }
+
+      // Clear booking data from localStorage
+      localStorage.removeItem('booking_branch_id')
+      localStorage.removeItem('booking_branch_name')
+      localStorage.removeItem('booking_clinic_id')
+      localStorage.removeItem('booking_clinic_name')
+      localStorage.removeItem('booking_doctor_id')
+      localStorage.removeItem('booking_doctor_name')
+      localStorage.removeItem('booking_symptoms')
+      localStorage.removeItem('booking_notes')
+
+      // Show success message
+      alert(t('booking.confirmationMessage') || 'จองสำเร็จ! คุณจะได้รับอีเมลและ SMS ยืนยันการจอง')
+
+      // Redirect to appointments page
+      router.push('/dashboard/appointments')
+    } catch (error) {
+      console.error('Error creating appointment:', error)
+      alert('เกิดข้อผิดพลาดในการจอง กรุณาลองใหม่อีกครั้ง: ' + error.message)
+    }
   }
 
   const handleBack = () => {

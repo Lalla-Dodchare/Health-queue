@@ -176,21 +176,26 @@ export async function POST(request) {
               </div>
             ` : ''}
 
-            <div class="buttons">
-              <h3 style="color: #333;">กรุณาเลือกตัวเลือก:</h3>
-              <a href="${responseUrl}?action=approve_primary" class="btn btn-primary">✅ อนุมัติวันหลัก</a>
-              <a href="${responseUrl}?action=approve_secondary" class="btn btn-secondary">📅 อนุมัติวันรอง</a>
-              <a href="${responseUrl}?action=reject" class="btn btn-danger">❌ ปฏิเสธ</a>
+            <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
+              <h3 style="color: #92400e; margin-top: 0;">📋 วิธีการตอบกลับ</h3>
+              <p style="color: #78350f; margin: 10px 0;">
+                กรุณาตอบกลับอีเมลนี้โดยระบุตัวเลือกของคุณ:
+              </p>
+              <ul style="color: #78350f; line-height: 1.8; margin: 10px 0; padding-left: 20px;">
+                <li><strong>อนุมัติวันหลัก</strong> - ถ้าสะดวกตามวันที่ตัวเลือกที่ 1</li>
+                <li><strong>อนุมัติวันรอง</strong> - ถ้าสะดวกตามวันที่ตัวเลือกที่ 2</li>
+                <li><strong>เสนอวันที่อื่น</strong> - ระบุวันที่และเวลาที่สะดวก (เช่น "5 ธันวาคม 2567 เวลา 14:00")</li>
+                <li><strong>ปฏิเสธ</strong> - หากไม่สะดวกรับผู้ป่วย</li>
+              </ul>
+              <p style="color: #92400e; font-weight: bold; margin-top: 15px;">
+                แอดมินจะดำเนินการอนุมัติในระบบหลังจากได้รับการตอบกลับจากคุณ
+              </p>
             </div>
-
-            <p style="text-align: center; color: #6b7280; margin-top: 30px;">
-              กดปุ่มด้านบนเพื่อตอบกลับ Admin จะเห็นคำตอบของคุณทันที
-            </p>
           </div>
 
           <div class="footer">
             <p>Health Queue Management System</p>
-            <p>Email นี้ส่งอัตโนมัติ กรุณาอย่าตอบกลับ</p>
+            <p>กรุณาตอบกลับอีเมลนี้เพื่อแจ้งการตัดสินใจของคุณ</p>
           </div>
         </div>
       </body>

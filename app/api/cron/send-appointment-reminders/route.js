@@ -52,7 +52,8 @@ export async function GET(request) {
         .single()
 
       // ตรวจสอบว่าผู้ใช้เปิด SMS notifications หรือไม่
-      const smsEnabled = user?.notification_preferences?.sms_notifications !== false
+      // Default: false (ผู้ใช้ต้องเปิดเอง)
+      const smsEnabled = user?.notification_preferences?.sms_notifications === true
       if (!smsEnabled || !user?.phone) {
         continue
       }

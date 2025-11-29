@@ -16,6 +16,9 @@ export default function DoctorResponsePage() {
   const [appointment, setAppointment] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [customDate, setCustomDate] = useState('')
+  const [customTime, setCustomTime] = useState('')
+  const [showCustomForm, setShowCustomForm] = useState(false)
 
   useEffect(() => {
     loadAppointment()
@@ -79,9 +82,15 @@ export default function DoctorResponsePage() {
       setAppointment(data)
       setLoading(false)
 
-      // ถ้ามี action ใน URL ให้ submit ทันที (ส่ง appointmentId ไปด้วย)
+      // ถ้ามี action ใน URL
       if (action && !success) {
-        handleSubmit(action, appointmentId)
+        // ถ้าเป็น custom ให้แสดงฟอร์ม ไม่ submit ทันที
+        if (action === 'custom') {
+          setShowCustomForm(true)
+        } else {
+          // action อื่นๆ submit ทันที (ส่ง appointmentId ไปด้วย)
+          handleSubmit(action, appointmentId)
+        }
       }
     } catch (err) {
       console.error('Error loading appointment:', err)
@@ -92,6 +101,15 @@ export default function DoctorResponsePage() {
 
   const handleSubmit = async (selectedAction, apptId = null) => {
     if (submitting) return
+
+    // Validate custom date/time if action is custom
+    if (selectedAction === 'custom') {
+      if (!customDate || !customTime) {
+        setError('กรุณาเลือกวันที่และเวลา')
+        return
+      }
+    }
+
     setSubmitting(true)
 
     try {
@@ -106,6 +124,13 @@ export default function DoctorResponsePage() {
         updateData = {
           status: 'approved',
           approved_option: 'secondary'
+        }
+      } else if (selectedAction === 'custom') {
+        updateData = {
+          status: 'approved',
+          approved_option: 'custom',
+          appointment_date: customDate,
+          appointment_time: customTime
         }
       } else if (selectedAction === 'reject') {
         updateData = {
@@ -171,6 +196,7 @@ export default function DoctorResponsePage() {
               คุณได้{' '}
               {action === 'approve_primary' && 'อนุมัติวันหลัก'}
               {action === 'approve_secondary' && 'อนุมัติวันรอง'}
+              {action === 'custom' && `เลือกวันที่ ${customDate} เวลา ${customTime}`}
               {action === 'reject' && 'ปฏิเสธการนัดหมาย'}
               {' '}เรียบร้อยแล้ว
             </p>
@@ -261,37 +287,115 @@ export default function DoctorResponsePage() {
             <div className="space-y-4">
               <h3 className="text-center text-lg font-semibold text-gray-900 mb-4">กรุณาเลือกตัวเลือก</h3>
 
-              <button
-                onClick={() => handleSubmit('approve_primary')}
-                disabled={submitting}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
-              >
-                <CheckCircle className="w-6 h-6" />
-                ✅ อนุมัติวันหลัก
-              </button>
+              {!showCustomForm ? (
+                <>
+                  <button
+                    onClick={() => handleSubmit('approve_primary')}
+                    disabled={submitting}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                  >
+                    <CheckCircle className="w-6 h-6" />
+                    ✅ อนุมัติวันหลัก
+                  </button>
 
-              <button
-                onClick={() => handleSubmit('approve_secondary')}
-                disabled={submitting}
-                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
-              >
-                <Calendar className="w-6 h-6" />
-                📅 อนุมัติวันรอง
-              </button>
+                  <button
+                    onClick={() => handleSubmit('approve_secondary')}
+                    disabled={submitting}
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                  >
+                    <Calendar className="w-6 h-6" />
+                    📅 อนุมัติวันรอง
+                  </button>
 
-              <button
-                onClick={() => handleSubmit('reject')}
-                disabled={submitting}
-                className="w-full bg-gradient-to-r from-red-500 to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-red-600 hover:to-pink-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
-              >
-                <XCircle className="w-6 h-6" />
-                ❌ ปฏิเสธการนัดหมาย
-              </button>
+                  <button
+                    onClick={() => setShowCustomForm(true)}
+                    disabled={submitting}
+                    className="w-full bg-gradient-to-r from-purple-500 to-violet-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-purple-600 hover:to-violet-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                  >
+                    <Clock className="w-6 h-6" />
+                    📆 เลือกวัน-เวลาเอง
+                  </button>
+
+                  <button
+                    onClick={() => handleSubmit('reject')}
+                    disabled={submitting}
+                    className="w-full bg-gradient-to-r from-red-500 to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-red-600 hover:to-pink-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-3"
+                  >
+                    <XCircle className="w-6 h-6" />
+                    ❌ ปฏิเสธการนัดหมาย
+                  </button>
+                </>
+              ) : (
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-purple-900 mb-4">📆 กรุณาเลือกวันที่และเวลาที่สะดวก</h3>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-red-800">{error}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        วันที่
+                      </label>
+                      <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => setCustomDate(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        เวลา
+                      </label>
+                      <input
+                        type="time"
+                        value={customTime}
+                        onChange={(e) => setCustomTime(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setShowCustomForm(false)
+                        setCustomDate('')
+                        setCustomTime('')
+                        setError('')
+                      }}
+                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      onClick={() => handleSubmit('custom')}
+                      disabled={submitting || !customDate || !customTime}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 text-white py-3 px-4 rounded-lg font-bold hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          กำลังบันทึก...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          ยืนยัน
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-
-            <p className="text-center text-gray-500 text-sm mt-8">
-              เมื่อกดปุ่มแล้ว Admin จะเห็นคำตอบของคุณทันที
-            </p>
           </div>
         </div>
       </div>

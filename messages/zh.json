@@ -37,7 +37,8 @@
   "header": {
     "appointments": "我的预约",
     "notifications": "通知",
-    "searchPlaceholder": "搜索医生、专科..."
+    "searchPlaceholder": "搜索医生、专科...",
+    "quickBook": "快速预约"
   },
   "footer": {
     "aboutUs": "健康排队是全国在线医院预约系统。我们让预约医生和专家变得简单。",
@@ -54,6 +55,17 @@
     "saturdayToSunday": "周六 - 周日",
     "available24Hours": "24小时在线预约",
     "allRightsReserved": "版权所有"
+  },
+  "carousel": {
+    "slide1": "先进医疗服务",
+    "slide1Title": "您的健康是我们的首要任务",
+    "slide1Description": "配备现代化设备和经验丰富专家的综合医疗服务",
+    "slide2": "轻松预约",
+    "slide2Title": "随时随地预约",
+    "slide2Description": "只需点击几下即可24小时在线预约医疗服务",
+    "slide3": "专业医疗团队",
+    "slide3Title": "信赖我们的专业知识",
+    "slide3Description": "经过认证的医生和医疗专业人员致力于您的健康"
   },
   "dashboard": {
     "title": "仪表板",
@@ -94,6 +106,8 @@
     "add": "加入购物车",
     "healthArticles": "健康文章",
     "readMore": "阅读更多",
+    "medicalCenters": "医疗中心和诊所",
+    "medicalCentersDescription": "来自专业医疗中心和诊所的综合医疗服务",
     "centersAndClinics": "医疗中心和诊所",
     "aboutCenter": "关于中心",
     "treatmentServices": "治疗和服务",
@@ -145,7 +159,26 @@
   "search": {
     "searching": "搜索中...",
     "noResults": "未找到结果",
-    "bookNow": "立即预约"
+    "bookNow": "立即预约",
+    "branch": "分院"
+  },
+  "doctors": {
+    "title": "查找医生",
+    "searchDoctor": "搜索医生、科室、分院...",
+    "showing": "显示",
+    "results": "结果",
+    "filterBy": "筛选",
+    "allBranches": "所有分院",
+    "allDepartments": "所有科室",
+    "noDoctorsFound": "未找到医生",
+    "makeAppointment": "预约",
+    "details": "详情"
+  },
+  "doctorDetail": {
+    "backToDoctors": "返回医生列表",
+    "centerAndClinic": "医疗中心和诊所",
+    "doctorNotFound": "未找到医生",
+    "backToDoctorsList": "返回医生列表"
   },
   "chatbot": {
     "title": "医疗助手",
@@ -184,8 +217,6 @@
     "or": "或",
     "noAccount": "还没有账户？",
     "register": "注册",
-    "infoTitle": "ℹ️ 用户须知",
-    "infoDescription": "系统将自动检查权限（用户/管理员/医生）并带您到相应页面",
     "loginFailed": "登录失败",
     "googleLoginFailed": "Google 登录失败",
     "checking": "检查中..."
@@ -244,6 +275,8 @@
     "treatmentFiles": "治疗文件",
     "downloadFile": "下载文件",
     "downloadTreatmentFile": "下载治疗文件",
+    "notes": "备注",
+    "cancel": "取消",
     "confirmCancel": "您确定要取消此预约吗？",
     "cancelSuccess": "预约已成功取消",
     "status": {
@@ -263,8 +296,18 @@
     "fullName": "全名",
     "email": "电子邮件",
     "phone": "电话号码",
+    "gender": "性别",
+    "selectGender": "选择性别",
+    "male": "男",
+    "female": "女",
+    "other": "其他",
     "dateOfBirth": "出生日期",
-    "address": "地址",
+    "idCard": "身份证号码",
+    "idCardPlaceholder": "输入13位身份证号码",
+    "idCardHint": "泰国公民（13位）",
+    "passport": "护照号码",
+    "passportPlaceholder": "输入护照号码",
+    "passportHint": "外国公民",
     "allergies": "过敏史",
     "allergiesPlaceholder": "输入您的过敏史",
     "emergencyContact": "紧急联系人",
@@ -293,6 +336,13 @@
     "notificationsSaved": "通知偏好设置保存成功",
     "emailChangeError": "无法更改电子邮件",
     "emailChangeSent": "验证链接已发送至新邮箱，请检查您的电子邮件",
-    "emailChangeWarning": "更改电子邮件将向新邮箱发送验证链接"
+    "emailChangeWarning": "更改电子邮件需要发送OTP验证码到新邮箱",
+    "verificationCodeSent": "验证码已发送至新邮箱",
+    "enterVerificationCode": "输入邮件中的验证码",
+    "verificationCodeSentTo": "验证码已发送至",
+    "verificationCodePlaceholder": "输入6位验证码",
+    "verify": "验证",
+    "cancelEmailChange": "取消更改邮箱",
+    "emailChanged": "邮箱更改成功"
   }
 }

@@ -37,7 +37,8 @@
   "header": {
     "appointments": "मेरे अपॉइंटमेंट",
     "notifications": "सूचनाएं",
-    "searchPlaceholder": "डॉक्टर, विशेषज्ञता खोजें..."
+    "searchPlaceholder": "डॉक्टर, विशेषज्ञता खोजें...",
+    "quickBook": "त्वरित बुक करें"
   },
   "footer": {
     "aboutUs": "हेल्थ क्यू एक राष्ट्रव्यापी ऑनलाइन अस्पताल अपॉइंटमेंट बुकिंग सिस्टम है। हम डॉक्टरों और विशेषज्ञों के साथ अपॉइंटमेंट शेड्यूल करना आसान बनाते हैं।",
@@ -54,6 +55,17 @@
     "saturdayToSunday": "शनिवार - रविवार",
     "available24Hours": "24 घंटे ऑनलाइन बुकिंग उपलब्ध",
     "allRightsReserved": "सर्वाधिकार सुरक्षित"
+  },
+  "carousel": {
+    "slide1": "उन्नत स्वास्थ्य सेवाएं",
+    "slide1Title": "आपका स्वास्थ्य हमारी प्राथमिकता है",
+    "slide1Description": "आधुनिक उपकरणों और अनुभवी विशेषज्ञों के साथ व्यापक चिकित्सा सेवाएं",
+    "slide2": "आसान अपॉइंटमेंट बुकिंग",
+    "slide2Title": "कभी भी, कहीं भी बुक करें",
+    "slide2Description": "केवल कुछ क्लिक में 24/7 ऑनलाइन चिकित्सा अपॉइंटमेंट शेड्यूल करें",
+    "slide3": "विशेषज्ञ चिकित्सा टीम",
+    "slide3Title": "हमारी विशेषज्ञता पर भरोसा करें",
+    "slide3Description": "बोर्ड-प्रमाणित डॉक्टर और स्वास्थ्य पेशेवर आपकी भलाई के लिए समर्पित"
   },
   "dashboard": {
     "title": "डैशबोर्ड",
@@ -94,6 +106,8 @@
     "add": "कार्ट में जोड़ें",
     "healthArticles": "स्वास्थ्य लेख",
     "readMore": "और पढ़ें",
+    "medicalCenters": "चिकित्सा केंद्र और क्लिनिक",
+    "medicalCentersDescription": "विशेष चिकित्सा केंद्रों और क्लीनिकों से व्यापक स्वास्थ्य सेवाएं",
     "centersAndClinics": "चिकित्सा केंद्र और क्लिनिक",
     "aboutCenter": "केंद्र के बारे में",
     "treatmentServices": "उपचार और सेवाएं",
@@ -145,7 +159,26 @@
   "search": {
     "searching": "खोजा जा रहा है...",
     "noResults": "कोई परिणाम नहीं मिला",
-    "bookNow": "अभी बुक करें"
+    "bookNow": "अभी बुक करें",
+    "branch": "शाखा"
+  },
+  "doctors": {
+    "title": "डॉक्टर खोजें",
+    "searchDoctor": "डॉक्टर, विभाग, शाखा खोजें...",
+    "showing": "दिखाया जा रहा है",
+    "results": "परिणाम",
+    "filterBy": "फ़िल्टर करें",
+    "allBranches": "सभी शाखाएं",
+    "allDepartments": "सभी विभाग",
+    "noDoctorsFound": "कोई डॉक्टर नहीं मिला",
+    "makeAppointment": "अपॉइंटमेंट बुक करें",
+    "details": "विवरण"
+  },
+  "doctorDetail": {
+    "backToDoctors": "डॉक्टरों की सूची में वापस जाएं",
+    "centerAndClinic": "चिकित्सा केंद्र और क्लिनिक",
+    "doctorNotFound": "डॉक्टर नहीं मिला",
+    "backToDoctorsList": "डॉक्टरों की सूची में वापस जाएं"
   },
   "chatbot": {
     "title": "चिकित्सा सहायक",
@@ -184,8 +217,6 @@
     "or": "या",
     "noAccount": "खाता नहीं है?",
     "register": "पंजीकरण करें",
-    "infoTitle": "ℹ️ उपयोगकर्ताओं के लिए",
-    "infoDescription": "सिस्टम स्वचालित रूप से अनुमतियों (उपयोगकर्ता/व्यवस्थापक/डॉक्टर) की जांच करेगा और आपको उपयुक्त पृष्ठ पर ले जाएगा",
     "loginFailed": "लॉगिन विफल",
     "googleLoginFailed": "Google लॉगिन विफल",
     "checking": "जांच की जा रही है..."
@@ -244,6 +275,8 @@
     "treatmentFiles": "उपचार फाइलें",
     "downloadFile": "फाइल डाउनलोड करें",
     "downloadTreatmentFile": "उपचार फाइल डाउनलोड करें",
+    "notes": "टिप्पणियाँ",
+    "cancel": "रद्द करें",
     "confirmCancel": "क्या आप वाकई इस अपॉइंटमेंट को रद्द करना चाहते हैं?",
     "cancelSuccess": "अपॉइंटमेंट सफलतापूर्वक रद्द किया गया",
     "status": {
@@ -263,8 +296,18 @@
     "fullName": "पूरा नाम",
     "email": "ईमेल",
     "phone": "फोन नंबर",
+    "gender": "लिंग",
+    "selectGender": "लिंग चुनें",
+    "male": "पुरुष",
+    "female": "महिला",
+    "other": "अन्य",
     "dateOfBirth": "जन्म तिथि",
-    "address": "पता",
+    "idCard": "ID कार्ड नंबर",
+    "idCardPlaceholder": "13 अंकों का ID कार्ड नंबर दर्ज करें",
+    "idCardHint": "थाई नागरिकों के लिए (13 अंक)",
+    "passport": "पासपोर्ट नंबर",
+    "passportPlaceholder": "पासपोर्ट नंबर दर्ज करें",
+    "passportHint": "विदेशी नागरिकों के लिए",
     "allergies": "एलर्जी",
     "allergiesPlaceholder": "अपनी एलर्जी दर्ज करें",
     "emergencyContact": "आपातकालीन संपर्क",
@@ -293,6 +336,13 @@
     "notificationsSaved": "सूचना प्राथमिकताएं सफलतापूर्वक सहेजी गईं",
     "emailChangeError": "ईमेल बदला नहीं जा सकता",
     "emailChangeSent": "नए ईमेल पर सत्यापन लिंक भेजा गया। कृपया अपना ईमेल जांचें",
-    "emailChangeWarning": "ईमेल बदलने पर नए ईमेल पर सत्यापन लिंक भेजा जाएगा"
+    "emailChangeWarning": "ईमेल बदलने के लिए नए ईमेल पर OTP सत्यापन आवश्यक है",
+    "verificationCodeSent": "नए ईमेल पर सत्यापन कोड भेजा गया",
+    "enterVerificationCode": "ईमेल से सत्यापन कोड दर्ज करें",
+    "verificationCodeSentTo": "सत्यापन कोड भेजा गया:",
+    "verificationCodePlaceholder": "6 अंकों का कोड दर्ज करें",
+    "verify": "सत्यापित करें",
+    "cancelEmailChange": "ईमेल परिवर्तन रद्द करें",
+    "emailChanged": "ईमेल सफलतापूर्वक बदला गया"
   }
 }

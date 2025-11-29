@@ -7,6 +7,7 @@ import {
   Stethoscope,
   Building2,
   MessageCircle,
+  MessageSquare,
   Settings,
   LogOut,
   Calendar,
@@ -44,6 +45,11 @@ const navigation = [
     href: '/admin/chat',
     icon: MessageCircle,
     badge: true, // แสดง badge ถ้ามีข้อความใหม่
+  },
+  {
+    name: 'ข้อความสำเร็จรูป',
+    href: '/admin/canned-responses',
+    icon: MessageSquare,
   },
 ]
 

@@ -38,7 +38,8 @@
   "header": {
     "appointments": "My Appointments",
     "notifications": "Notifications",
-    "searchPlaceholder": "Search for doctors, specialties..."
+    "searchPlaceholder": "Search for doctors, specialties...",
+    "quickBook": "Quick Book"
   },
   "footer": {
     "aboutUs": "Health Queue is an online hospital appointment booking system nationwide. We make it easy to schedule appointments with doctors and specialists.",
@@ -55,6 +56,17 @@
     "saturdayToSunday": "Saturday - Sunday",
     "available24Hours": "24-hour online booking available",
     "allRightsReserved": "All rights reserved"
+  },
+  "carousel": {
+    "slide1": "Advanced Healthcare Services",
+    "slide1Title": "Your Health, Our Priority",
+    "slide1Description": "Comprehensive medical services with modern equipment and experienced specialists",
+    "slide2": "Easy Appointment Booking",
+    "slide2Title": "Book Anytime, Anywhere",
+    "slide2Description": "Schedule your medical appointments online 24/7 with just a few clicks",
+    "slide3": "Expert Medical Team",
+    "slide3Title": "Trust in Our Expertise",
+    "slide3Description": "Board-certified doctors and healthcare professionals dedicated to your wellbeing"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -95,6 +107,8 @@
     "add": "Add to Cart",
     "healthArticles": "Health Articles",
     "readMore": "Read More",
+    "medicalCenters": "Medical Centers and Clinics",
+    "medicalCentersDescription": "Comprehensive healthcare services from specialized medical centers and clinics",
     "centersAndClinics": "Medical Centers and Clinics",
     "aboutCenter": "About the Center",
     "treatmentServices": "Treatment and Services",
@@ -146,7 +160,26 @@
   "search": {
     "searching": "Searching...",
     "noResults": "No results found",
-    "bookNow": "Book Now"
+    "bookNow": "Book Now",
+    "branch": "Branch"
+  },
+  "doctors": {
+    "title": "Find Doctors",
+    "searchDoctor": "Search doctors, departments, branches...",
+    "showing": "Showing",
+    "results": "results",
+    "filterBy": "Filter by",
+    "allBranches": "All Branches",
+    "allDepartments": "All Departments",
+    "noDoctorsFound": "No doctors found",
+    "makeAppointment": "Make Appointment",
+    "details": "Details"
+  },
+  "doctorDetail": {
+    "backToDoctors": "Back to Doctors",
+    "centerAndClinic": "Medical Center and Clinic",
+    "doctorNotFound": "Doctor not found",
+    "backToDoctorsList": "Back to Doctors List"
   },
   "chatbot": {
     "title": "Medical Assistant",
@@ -185,8 +218,6 @@
     "or": "or",
     "noAccount": "Don't have an account?",
     "register": "Register",
-    "infoTitle": "ℹ️ For Users",
-    "infoDescription": "The system will automatically check permissions (User/Admin/Doctor) and take you to the appropriate page",
     "loginFailed": "Login failed",
     "googleLoginFailed": "Google login failed",
     "checking": "Checking..."
@@ -245,6 +276,8 @@
     "treatmentFiles": "Treatment Files",
     "downloadFile": "Download file",
     "downloadTreatmentFile": "Download Treatment File",
+    "notes": "Notes",
+    "cancel": "Cancel",
     "confirmCancel": "Are you sure you want to cancel this appointment?",
     "cancelSuccess": "Appointment cancelled successfully",
     "status": {
@@ -264,8 +297,18 @@
     "fullName": "Full Name",
     "email": "Email",
     "phone": "Phone Number",
+    "gender": "Gender",
+    "selectGender": "Select Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
     "dateOfBirth": "Date of Birth",
-    "address": "Address",
+    "idCard": "ID Card Number",
+    "idCardPlaceholder": "Enter 13-digit ID card number",
+    "idCardHint": "For Thai citizens (13 digits)",
+    "passport": "Passport Number",
+    "passportPlaceholder": "Enter passport number",
+    "passportHint": "For foreign nationals",
     "allergies": "Allergies",
     "allergiesPlaceholder": "Enter your allergies",
     "emergencyContact": "Emergency Contact",
@@ -294,6 +337,13 @@
     "notificationsSaved": "Notification preferences saved successfully",
     "emailChangeError": "Cannot change email",
     "emailChangeSent": "Verification link sent to new email. Please check your email",
-    "emailChangeWarning": "Changing email will send a verification link to the new email"
+    "emailChangeWarning": "Email change requires OTP verification sent to new email",
+    "verificationCodeSent": "Verification code sent to new email",
+    "enterVerificationCode": "Enter verification code from email",
+    "verificationCodeSentTo": "Verification code sent to",
+    "verificationCodePlaceholder": "Enter 6-digit code",
+    "verify": "Verify",
+    "cancelEmailChange": "Cancel email change",
+    "emailChanged": "Email changed successfully"
   }
 }

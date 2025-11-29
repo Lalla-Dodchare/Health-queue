@@ -53,7 +53,9 @@ export default function AdminAppointmentsPage() {
   // Modal state
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [approvalModal, setApprovalModal] = useState(false)
-  const [selectedSlot, setSelectedSlot] = useState('primary') // 'primary' or 'secondary'
+  const [selectedSlot, setSelectedSlot] = useState('primary') // 'primary', 'secondary', or 'custom'
+  const [customDate, setCustomDate] = useState('')
+  const [customTime, setCustomTime] = useState('')
   const [sendingEmail, setSendingEmail] = useState(null) // Track which appointment is sending email
 
   // Auth check
@@ -223,6 +225,8 @@ export default function AdminAppointmentsPage() {
   const openApprovalModal = (appointment) => {
     setSelectedAppointment(appointment)
     setSelectedSlot('primary')
+    setCustomDate('')
+    setCustomTime('')
     setApprovalModal(true)
   }
 
@@ -230,22 +234,39 @@ export default function AdminAppointmentsPage() {
   const handleApprove = async () => {
     if (!selectedAppointment) return
 
+    // Validate custom date/time if custom option is selected
+    if (selectedSlot === 'custom') {
+      if (!customDate || !customTime) {
+        alert('กรุณาเลือกวันที่และเวลาสำหรับตัวเลือกกำหนดเอง')
+        return
+      }
+    }
+
     setProcessing(selectedAppointment.id)
 
     try {
-      const approvedDate = selectedSlot === 'primary'
-        ? selectedAppointment.primary_date
-        : selectedAppointment.secondary_date
+      let approvedDate, approvedTime
 
-      const approvedTime = selectedSlot === 'primary'
-        ? selectedAppointment.primary_time
-        : selectedAppointment.secondary_time
+      if (selectedSlot === 'custom') {
+        approvedDate = customDate
+        approvedTime = customTime
+      } else {
+        approvedDate = selectedSlot === 'primary'
+          ? selectedAppointment.primary_date
+          : selectedAppointment.secondary_date
+
+        approvedTime = selectedSlot === 'primary'
+          ? selectedAppointment.primary_time
+          : selectedAppointment.secondary_time
+      }
 
       const { error } = await supabase
         .from('appointments')
         .update({
           status: 'approved',
-          approved_option: selectedSlot
+          approved_option: selectedSlot,
+          appointment_date: approvedDate,
+          appointment_time: approvedTime
         })
         .eq('id', selectedAppointment.id)
 
@@ -308,6 +329,9 @@ export default function AdminAppointmentsPage() {
       alert('อนุมัติการนัดหมายเรียบร้อยแล้ว! อีเมลแจ้งเตือนและการแจ้งเตือนในแอปถูกส่งแล้ว')
       setApprovalModal(false)
       setSelectedAppointment(null)
+      setCustomDate('')
+      setCustomTime('')
+      setSelectedSlot('primary')
     } catch (error) {
       console.error('Error approving appointment:', error)
       alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
@@ -981,13 +1005,67 @@ export default function AdminAppointmentsPage() {
                   </div>
                 </div>
               </label>
-            </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-900">
-                ระบบจะส่งอีเมลแจ้งเตือนไปยังผู้ใช้และแพทย์โดยอัตโนมัติ
-              </p>
+              {/* Custom Date/Time Option */}
+              <label className={`block cursor-pointer border-2 rounded-lg p-4 transition-colors ${
+                selectedSlot === 'custom'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="slot"
+                  value="custom"
+                  checked={selectedSlot === 'custom'}
+                  onChange={() => setSelectedSlot('custom')}
+                  className="sr-only"
+                />
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    selectedSlot === 'custom'
+                      ? 'border-blue-500'
+                      : 'border-gray-300'
+                  }`}>
+                    {selectedSlot === 'custom' && (
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">ตัวเลือกที่ 3 (กำหนดเอง)</p>
+                    <p className="text-xs text-gray-500">สำหรับกรณีที่แพทย์ไม่สะดวกทั้งสองวัน</p>
+                  </div>
+                </div>
+
+                {/* Custom Date/Time Inputs - Only show when this option is selected */}
+                {selectedSlot === 'custom' && (
+                  <div className="mt-3 space-y-3 pl-8">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        เลือกวันที่
+                      </label>
+                      <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => setCustomDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        เลือกเวลา
+                      </label>
+                      <input
+                        type="time"
+                        value={customTime}
+                        onChange={(e) => setCustomTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+              </label>
             </div>
 
             <div className="flex gap-3">
@@ -995,6 +1073,9 @@ export default function AdminAppointmentsPage() {
                 onClick={() => {
                   setApprovalModal(false)
                   setSelectedAppointment(null)
+                  setCustomDate('')
+                  setCustomTime('')
+                  setSelectedSlot('primary')
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
